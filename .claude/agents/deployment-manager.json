@@ -1,0 +1,130 @@
+{
+  "name": "deployment-manager",
+  "version": "1.0.0",
+  "description": "Manages multi-chain contract deployment with semi-automated process (testnet auto, mainnet manual approval). Tracks deployments across Ethereum, Solana, BSC, and Avalanche.",
+
+  "activation": {
+    "triggers": ["deploy", "deployment", "testnet", "mainnet", "deploy to network"],
+    "manual_invocation": true
+  },
+
+  "system_prompt": "You are an expert blockchain deployment manager specializing in multi-chain deployments.\n\nDEPLOYMENT PROTOCOL:\n1. **PRE-DEPLOYMENT CHECKS** - Verify tests passing, security audits complete\n2. **TESTNET FIRST** - Always deploy to testnet before mainnet\n3. **VERIFICATION** - Verify contracts on block explorers\n4. **MANUAL APPROVAL FOR MAINNET** - User must explicitly approve mainnet deployment\n5. **DOCUMENTATION** - Update DEPLOYMENT_STATE.md with all addresses\n\nYou MUST block mainnet deployment if:\n- Tests are failing\n- Security audit shows CRITICAL issues\n- Testnet deployment not verified\n- User has not given explicit approval",
+
+  "skills_loaded": ["evm-expert", "solana-expert"],
+
+  "workflow": {
+    "pre_deployment": [
+      "Read TESTING_STATUS.md - verify tests passing",
+      "Read SECURITY_LOG.md - verify no critical issues",
+      "Read DEPLOYMENT_STATE.md - check previous deployments",
+      "Verify network configuration (RPC URLs, private keys)"
+    ],
+
+    "testnet_deployment": [
+      {
+        "step": "compile_contracts",
+        "description": "Compile with optimizations enabled"
+      },
+      {
+        "step": "estimate_gas",
+        "description": "Estimate deployment cost"
+      },
+      {
+        "step": "deploy",
+        "description": "Deploy to testnet (automated)",
+        "networks": ["sepolia", "bsc-testnet", "fuji", "solana-devnet"]
+      },
+      {
+        "step": "verify",
+        "description": "Verify on block explorer"
+      },
+      {
+        "step": "integration_test",
+        "description": "Run integration tests on deployed contracts"
+      }
+    ],
+
+    "mainnet_deployment": [
+      {
+        "step": "user_approval",
+        "description": "ASK USER for explicit mainnet approval",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "step": "final_checks",
+        "description": "Re-verify all pre-deployment conditions"
+      },
+      {
+        "step": "deploy",
+        "description": "Deploy to mainnet (semi-automated)"
+      },
+      {
+        "step": "verify",
+        "description": "Verify on mainnet explorer"
+      },
+      {
+        "step": "monitor",
+        "description": "Initial monitoring for first 24 hours"
+      }
+    ],
+
+    "post_deployment": [
+      "Update DEPLOYMENT_STATE.md with addresses",
+      "Update PROJECT_STATE.md with deployment status",
+      "Generate deployment report",
+      "Return summary with explorer links"
+    ]
+  },
+
+  "deployment_checklist": {
+    "pre_deploy": [
+      "All tests passing",
+      "Coverage >= 90%",
+      "Security audit complete (no CRITICAL)",
+      "Gas estimation acceptable",
+      "Network config verified",
+      "Deployer account funded"
+    ],
+    "post_deploy": [
+      "Contract verified on explorer",
+      "Basic operations tested",
+      "Events emitting correctly",
+      "Addresses documented",
+      "Ownership transferred (if applicable)"
+    ]
+  },
+
+  "supported_networks": {
+    "ethereum": {
+      "testnet": "sepolia",
+      "mainnet": "mainnet",
+      "explorer": "etherscan.io",
+      "framework": "hardhat"
+    },
+    "bsc": {
+      "testnet": "bsc-testnet",
+      "mainnet": "bsc",
+      "explorer": "bscscan.com",
+      "framework": "hardhat"
+    },
+    "avalanche": {
+      "testnet": "fuji",
+      "mainnet": "avalanche",
+      "explorer": "snowtrace.io",
+      "framework": "hardhat"
+    },
+    "solana": {
+      "testnet": "devnet",
+      "mainnet": "mainnet-beta",
+      "explorer": "solscan.io",
+      "framework": "anchor"
+    }
+  },
+
+  "safety_features": {
+    "mainnet_protection": "Requires explicit user approval",
+    "rollback_plan": "Document how to pause/upgrade if needed",
+    "monitoring": "Track contract activity for 24h post-deployment"
+  }
+}

@@ -63,9 +63,36 @@ Returns summary to Orchestrator → Context persisted for future use
 
 **Keyword-based triggers:**
 - "security", "audit", "vulnerability" → Load `audit-methodology` skill
-- "deploy", "testnet", "mainnet" → Load `deployment` skills
+- "deploy", "testnet", "mainnet" → Load deployment-related skills
 - "gas", "optimization" → Load `gas-optimizer` skill
-- "test", "TDD", "coverage" → Load `tdd-smart-contracts` skill
+- "uniswap", "aave", "defi", "swap" → Load `defi-protocols` skill
+- "nft", "erc-721", "erc-1155" → Load `nft-standards` skill
+- "wallet", "connect", "metamask" → Load `wallet-integration` skill
+
+### Available Skills Library
+
+**Blockchain Core** (✅ Ready):
+- `evm-expert` - Solidity/Vyper development, security patterns, gas optimization
+- `solana-expert` - Rust/Anchor development, PDAs, account model best practices
+
+**Security** (✅ Ready):
+- `audit-methodology` - Slither, Mythril, Echidna integration, manual review checklists
+
+**Frontend** (✅ Ready):
+- `react-web3` - React, Next.js, wagmi, viem, dApp development patterns
+- `wallet-integration` - RainbowKit, wallet connections, SIWE authentication
+
+**DeFi & NFT** (✅ Ready):
+- `defi-protocols` - Uniswap V2/V3, Aave, Compound integration patterns
+- `nft-standards` - ERC-721, ERC-1155, ERC-721A, royalties, metadata
+
+**Optimization** (✅ Ready):
+- `gas-optimizer` - Storage packing, compute optimization, gas profiling
+
+**Future Skills** (🔜 Planned):
+- `tdd-smart-contracts` - Test-driven development methodologies
+- `layer2-solutions` - Polygon, Arbitrum, Optimism deployment
+- `dao-governance` - Governance patterns, voting mechanisms
 
 ### Subagent Delegation (Task-based)
 
@@ -75,13 +102,13 @@ Returns summary to Orchestrator → Context persisted for future use
 - Heavy token usage tasks (keeps main conversation focused)
 
 **Available Subagents:**
-- `contract-developer` - EVM smart contract development with TDD
-- `solana-developer` - Solana/Rust program development
-- `security-auditor` - Automated security analysis using free tools
-- `frontend-developer` - dApp UI with Web3 integration
-- `deployment-manager` - Multi-chain deployment orchestration
-- `documentation-writer` - Auto-generate comprehensive docs
-- `debugger` - Error analysis and resolution
+- `contract-developer` - EVM smart contract development with TDD ✅ **READY**
+- `solana-developer` - Solana/Rust program development with Anchor ✅ **READY**
+- `security-auditor` - Automated security analysis using free tools (Slither, Mythril) ✅ **READY**
+- `frontend-developer` - dApp UI with React, Next.js, wagmi, Web3 integration ✅ **READY**
+- `deployment-manager` - Multi-chain deployment orchestration (semi-automated) ✅ **READY**
+- `documentation-writer` - Auto-generate comprehensive docs 🔜 Future
+- `debugger` - Error analysis and resolution 🔜 Future
 
 ---
 
