@@ -142,9 +142,36 @@
         "on_insufficient": "write_additional_tests"
       },
       {
+        "step": 1.5,
+        "action": "independent_verification",
+        "description": "CRITICAL: Verify agent claims independently (prevent Byzantine behavior)",
+        "verification_checks": [
+          {
+            "claim": "test_coverage >= 90%",
+            "verify_command": "forge coverage --json | jq -r '.coverage.lines.pct' | awk '{if($1 >= 90) print \"PASS\"; else print \"FAIL\"}'",
+            "on_fail": "reject_update_and_alert_orchestrator",
+            "severity": "CRITICAL"
+          },
+          {
+            "claim": "all_tests_passing",
+            "verify_command": "forge test --json | jq -e '[.tests[] | select(.status != \"Success\")] | length == 0'",
+            "on_fail": "reject_update_and_alert_orchestrator",
+            "severity": "CRITICAL"
+          },
+          {
+            "claim": "slither_no_critical",
+            "verify_command": "slither . --json - 2>/dev/null | jq -e '[.results.detectors[] | select(.impact == \"High\" or .impact == \"Critical\")] | length == 0'",
+            "on_fail": "reject_update_and_alert_orchestrator",
+            "severity": "CRITICAL"
+          }
+        ],
+        "notes": "If ANY verification fails, agent update is REJECTED and orchestrator is alerted. This prevents agents from reporting false metrics."
+      },
+      {
         "step": 2,
         "action": "update_project_state",
-        "description": "Update PROJECT_STATE.md with completed work",
+        "description": "Update PROJECT_STATE.md with completed work using atomic update",
+        "use_script": ".claude/scripts/update-context.sh",
         "required_fields": [
           "Contract name and location",
           "Test coverage percentage",
@@ -155,7 +182,8 @@
       {
         "step": 3,
         "action": "update_testing_status",
-        "description": "Update TESTING_STATUS.md with test results",
+        "description": "Update TESTING_STATUS.md with test results using atomic update",
+        "use_script": ".claude/scripts/update-context.sh",
         "required_fields": [
           "Test count",
           "Coverage by contract",
@@ -165,7 +193,8 @@
       {
         "step": 4,
         "action": "update_architecture",
-        "description": "Update ARCHITECTURE.md if contract structure changed",
+        "description": "Update ARCHITECTURE.md if contract structure changed using atomic update",
+        "use_script": ".claude/scripts/update-context.sh",
         "when": "new_contract_created OR contract_interface_changed"
       },
       {

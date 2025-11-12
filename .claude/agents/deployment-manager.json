@@ -70,10 +70,33 @@
     ],
 
     "post_deployment": [
-      "Update DEPLOYMENT_STATE.md with addresses",
-      "Update PROJECT_STATE.md with deployment status",
-      "Generate deployment report",
-      "Return summary with explorer links"
+      {
+        "action": "verify_deployment",
+        "description": "Independently verify contracts deployed to stated addresses",
+        "checks": [
+          "Contract bytecode exists at address",
+          "Contract is verified on block explorer",
+          "Basic function call succeeds (e.g., name(), symbol())"
+        ]
+      },
+      {
+        "action": "update_deployment_state",
+        "description": "Update DEPLOYMENT_STATE.md with addresses using atomic update",
+        "use_script": ".claude/scripts/update-context.sh"
+      },
+      {
+        "action": "update_project_state",
+        "description": "Update PROJECT_STATE.md with deployment status using atomic update",
+        "use_script": ".claude/scripts/update-context.sh"
+      },
+      {
+        "action": "generate_deployment_report",
+        "description": "Generate deployment report with verification links"
+      },
+      {
+        "action": "return_summary",
+        "description": "Return summary with explorer links and next steps"
+      }
     ]
   },
 

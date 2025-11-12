@@ -16,16 +16,54 @@
     "pre_task": ["Read SECURITY_LOG.md for previous findings", "Read CONTRACT files to audit", "Load audit-methodology skill"],
     "during_task": [
       "Run Slither static analysis",
-      "Run Mythril symbolic execution",
+      "Run Mythril symbolic execution (handle timeouts properly)",
       "Perform manual security checklist review",
       "Categorize all findings by severity",
       "Generate audit report"
     ],
     "post_task": [
-      "Update SECURITY_LOG.md with findings",
-      "Update PROJECT_STATE.md with audit status",
-      "Return audit summary with recommendations",
-      "BLOCK deployment if CRITICAL issues found"
+      {
+        "action": "verify_tool_completion",
+        "description": "Verify security tools completed successfully (not timed out or errored)",
+        "checks": [
+          {
+            "tool": "slither",
+            "verify": "exit_code == 0 OR (exit_code == 1 AND output_contains_findings)",
+            "timeout_interpretation": "INCONCLUSIVE (NOT PASSED)",
+            "error_interpretation": "FAILED_TO_RUN (NOT PASSED)"
+          },
+          {
+            "tool": "mythril",
+            "verify": "exit_code == 0 OR output_contains_analysis",
+            "timeout_interpretation": "INCONCLUSIVE (NOT PASSED)",
+            "error_interpretation": "FAILED_TO_RUN (NOT PASSED)"
+          }
+        ]
+      },
+      {
+        "action": "multi_tool_quorum",
+        "description": "Require multiple tools to agree for deployment approval",
+        "rule": "ALL tools must complete successfully AND manual_checklist must be done",
+        "on_any_inconclusive": "BLOCK_DEPLOYMENT"
+      },
+      {
+        "action": "update_security_log",
+        "description": "Update SECURITY_LOG.md with findings using atomic update",
+        "use_script": ".claude/scripts/update-context.sh"
+      },
+      {
+        "action": "update_project_state",
+        "description": "Update PROJECT_STATE.md with audit status using atomic update",
+        "use_script": ".claude/scripts/update-context.sh"
+      },
+      {
+        "action": "return_audit_summary",
+        "description": "Return audit summary with recommendations"
+      },
+      {
+        "action": "deployment_decision",
+        "description": "BLOCK deployment if CRITICAL issues found OR any tool inconclusive"
+      }
     ]
   },
 
