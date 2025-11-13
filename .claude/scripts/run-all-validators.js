@@ -5,19 +5,30 @@
  */
 const { IntegrationValidator } = require('./validators/integration-validator.js');
 const { PackageValidator } = require('./validators/package-validator.js');
+const { QualityValidator } = require('./validators/quality-validator.js');
+const { GitValidator } = require('./validators/git-validator.js');
+const { ContractValidator } = require('./validators/contract-validator.js');
+const { DeploymentValidator } = require('./validators/deployment-validator.js');
+const { ObservabilityValidator } = require('./validators/observability-validator.js');
+const { IssueAggregator } = require('./issue-aggregator.js');
 const fs = require('fs');
 const path = require('path');
 
 async function runAll() {
   console.log('🚀 Running all validators...\n');
-  
+
   const rootPath = process.cwd();
   const results = {};
-  
+
   // Run validators in parallel
   const validators = [
     { name: 'integration', Validator: IntegrationValidator },
-    { name: 'package', Validator: PackageValidator }
+    { name: 'package', Validator: PackageValidator },
+    { name: 'quality', Validator: QualityValidator },
+    { name: 'git', Validator: GitValidator },
+    { name: 'contract', Validator: ContractValidator },
+    { name: 'deployment', Validator: DeploymentValidator },
+    { name: 'observability', Validator: ObservabilityValidator }
   ];
   
   const promises = validators.map(async ({ name, Validator }) => {
@@ -66,9 +77,21 @@ async function runAll() {
     JSON.stringify({ results, aggregate: { totalIssues, bySeverity: aggregateSeverity } }, null, 2),
     'utf-8'
   );
-  
-  console.log(`\n✅ Aggregate report saved to: ${outputPath}\n`);
-  
+
+  console.log(`\n✅ Aggregate report saved to: ${outputPath}`);
+
+  // Run Issue Aggregator to deduplicate and prioritize
+  console.log('\n🔄 Running Issue Aggregator...\n');
+  try {
+    const aggregator = new IssueAggregator(rootPath);
+    await aggregator.aggregate();
+    await aggregator.save();
+  } catch (error) {
+    console.error('⚠️  Issue aggregator failed:', error.message);
+  }
+
+  console.log('');
+
   return results;
 }
 
