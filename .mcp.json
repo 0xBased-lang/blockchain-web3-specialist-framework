@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upleveled/context7"],
+      "description": "Provides up-to-date documentation for 6000+ libraries including Web3 stack"
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "description": "Web search for blockchain explorers, documentation, and error messages"
+    }
+  }
+}
