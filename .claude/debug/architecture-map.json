@@ -1,0 +1,55 @@
+{
+  "timestamp": "2025-11-13T02:16:15.850Z",
+  "projectType": "unknown",
+  "chains": {
+    "evm": {
+      "detected": false,
+      "contracts": [],
+      "framework": null
+    },
+    "solana": {
+      "detected": false,
+      "programs": [],
+      "framework": null
+    }
+  },
+  "frontend": {
+    "detected": false,
+    "framework": null,
+    "components": []
+  },
+  "backend": {
+    "detected": false,
+    "type": null,
+    "endpoints": []
+  },
+  "database": {
+    "detected": false,
+    "type": null,
+    "schema": []
+  },
+  "cache": {
+    "detected": false,
+    "type": null
+  },
+  "testing": {
+    "frameworks": [],
+    "testDirs": []
+  },
+  "deployment": {
+    "platforms": [],
+    "configs": []
+  },
+  "packageManager": null,
+  "monorepo": null,
+  "dependencies": {
+    "critical": [],
+    "web3": [],
+    "testing": []
+  },
+  "rpcProviders": [],
+  "environmentVars": {
+    "required": [],
+    "detected": []
+  }
+}
