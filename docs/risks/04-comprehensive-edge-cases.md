@@ -17,6 +17,7 @@
 6. [MCP Server Edge Cases](#6-mcp-server-edge-cases)
 7. [Memory & Resource Management](#7-memory--resource-management)
 8. [Cache Invalidation Edge Cases](#8-cache-invalidation-edge-cases)
+9. [Deployment Edge Cases](#9-deployment-edge-cases) **← NEW**
 
 ---
 
@@ -1542,6 +1543,515 @@ class SmartCache {
 
 ---
 
+## 9. Deployment Edge Cases
+
+**Source**: Forensic analysis of zmartV0.69 (216 commits) and kektechV0.69 (240 commits)
+**Impact**: 40% of development time spent on deployment/integration issues
+
+### 9.1 HTTPS/WSS Mixed Content (Browser Blocks HTTP from HTTPS)
+
+**Description**: Browser blocks HTTP/WS requests when frontend is served over HTTPS.
+
+**Real-World Impact**: zmartV0.69 - 6 commits, multiple hours debugging
+
+**Symptoms**:
+```
+Console: Mixed Content: The page at 'https://myapp.vercel.app' was loaded over HTTPS,
+but requested an insecure XMLHttpRequest endpoint 'http://185.202.236.71:4000/api/markets'.
+This request has been blocked; the content must be served over HTTPS.
+```
+
+**Root Cause**:
+- Frontend deployed on Vercel (automatic HTTPS)
+- Backend on VPS with HTTP only
+- Browser security policy blocks mixed content
+
+**Prevention**:
+```typescript
+// WRONG - will be blocked by browser
+const API_URL = 'http://185.202.236.71:4000';  // ❌ HTTP
+const WS_URL = 'ws://185.202.236.71:4000';      // ❌ WS
+
+// CORRECT - use HTTPS/WSS
+const API_URL = 'https://api.yourdomain.com';   // ✅ HTTPS
+const WS_URL = 'wss://ws.yourdomain.com';       // ✅ WSS (secure WebSocket)
+```
+
+**Solution**: Use Cloudflare Tunnel (See Guide 17, Section 2.4)
+
+```bash
+# Install cloudflared on VPS
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+sudo chmod +x /usr/local/bin/cloudflared
+
+# Create tunnel
+cloudflared tunnel create backend-api
+
+# Configure tunnel (~/.cloudflared/config.yml)
+tunnel: abc123-def456-ghi789
+credentials-file: /home/deployer/.cloudflared/abc123-def456-ghi789.json
+
+ingress:
+  - hostname: api.yourdomain.com
+    service: http://localhost:4000
+  - hostname: ws.yourdomain.com
+    service: http://localhost:4000
+  - service: http_status:404
+
+# Route DNS
+cloudflared tunnel route dns backend-api api.yourdomain.com
+cloudflared tunnel route dns backend-api ws.yourdomain.com
+
+# Run as service
+sudo cloudflared service install
+sudo systemctl start cloudflared
+```
+
+**Testing**:
+```bash
+# Verify HTTPS working
+curl https://api.yourdomain.com/health
+
+# Expected: 200 OK with health check data
+```
+
+---
+
+### 9.2 Environment Variable Newlines (Silent Failures)
+
+**Description**: Invisible newline characters in `.env` files break API URLs.
+
+**Real-World Impact**: zmartV0.69 - 3 commits (INCIDENT-001 contributing factor)
+
+**Symptoms**:
+```bash
+# .env file (looks normal)
+API_URL=http://localhost:4000
+
+# But actually has newline:
+API_URL=http://localhost:4000\n
+
+# Results in:
+fetch('http://localhost:4000\n/markets')  # DNS lookup fails!
+```
+
+**Detection**:
+```bash
+# Check for newlines
+cat .env | od -c | grep '\\n'
+
+# Check for Windows line endings (CRLF)
+file .env
+# Should output: "ASCII text"
+# NOT: "ASCII text, with CRLF line terminators"
+```
+
+**Prevention**: Validation script
+
+```bash
+#!/bin/bash
+# scripts/validate-env.sh
+set -e
+
+echo "🔍 Validating environment files..."
+
+for env_file in .env .env.local .env.production; do
+  if [ -f "$env_file" ]; then
+    echo "Checking $env_file..."
+
+    # Find lines with trailing newline
+    if grep -P '\n$' "$env_file"; then
+      echo "❌ ERROR: Found trailing newline in $env_file"
+      exit 1
+    fi
+
+    # Check for Windows line endings
+    if file "$env_file" | grep -q "CRLF"; then
+      echo "⚠️  WARNING: Windows line endings (CRLF) detected"
+      echo "Fix: dos2unix $env_file"
+    fi
+
+    echo "✅ $env_file looks good"
+  fi
+done
+```
+
+**Add to package.json**:
+```json
+{
+  "scripts": {
+    "validate:env": "./scripts/validate-env.sh",
+    "prebuild": "pnpm validate:env"
+  }
+}
+```
+
+---
+
+### 9.3 PM2 Crash Loops (Services Restart Indefinitely)
+
+**Description**: PM2 shows "online" but services restart every few seconds.
+
+**Real-World Impact**: zmartV0.69 INCIDENT-001 - 47 restarts in 4 minutes, production down
+
+**Symptoms**:
+```bash
+pm2 status
+┌─────┬──────────────────┬─────────┬─────────┬──────────┬─────────┐
+│ id  │ name             │ mode    │ status  │ restart  │ uptime  │
+├─────┼──────────────────┼─────────┼─────────┼──────────┼─────────┤
+│ 0   │ vote-aggregator  │ fork    │ online  │ 47       │ 5s      │ ❌
+│ 1   │ market-monitor   │ fork    │ online  │ 47       │ 8s      │ ❌
+└─────┴──────────────────┴─────────┴─────────┴──────────┴─────────┘
+
+# Empty logs (red flag - code never ran)
+pm2 logs vote-aggregator --lines 100
+[Empty output]
+```
+
+**Root Causes** (zmartV0.69 INCIDENT-001):
+1. **Missing environment variable** - Code throws on startup
+2. **TypeScript not compiled** - No `dist/` files exist
+
+**Detection**:
+```bash
+# High restart count + low uptime = crash loop
+if pm2 status | grep -E 'online.*[0-9]{2,}.*[0-9]+s'; then
+  echo "⚠️  Crash loop detected!"
+fi
+```
+
+**Prevention**: Pre-deployment checks
+
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [{
+    name: 'vote-aggregator',
+    script: './dist/vote-aggregator/src/index.js',
+
+    // CRITICAL: Build and test BEFORE starting
+    pre_deploy_local: 'npm run build && npm run test',
+
+    // Limit restarts to prevent infinite loops
+    max_restarts: 10,
+    min_uptime: '10s',  // Only count as success if runs >10s
+
+    // Wait for app to signal ready
+    wait_ready: true,
+    listen_timeout: 10000,
+
+    // Auto-restart on memory leak
+    max_memory_restart: '500M',
+
+    error_file: './logs/vote-aggregator-error.log',
+    out_file: './logs/vote-aggregator-out.log',
+  }]
+};
+```
+
+**Manual Deployment Checklist**:
+```bash
+# 1. Build TypeScript
+npm run build
+
+# 2. Verify compiled files exist
+test -f dist/index.js || { echo "❌ Build failed!"; exit 1; }
+
+# 3. Verify environment variables
+./scripts/validate-env.sh
+
+# 4. Start PM2
+pm2 start ecosystem.config.js
+
+# 5. Verify no crash loop
+sleep 30  # Wait 30 seconds
+pm2 status | grep -E 'online.*0.*[0-9]+m' || { echo "❌ Crash loop!"; exit 1; }
+```
+
+**Environment Validation** (prevents missing env var crashes):
+```typescript
+// src/utils/validate-env.ts
+export function validateRequiredEnvVars() {
+  const required = [
+    'BACKEND_AUTHORITY_PRIVATE_KEY',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'DATABASE_URL',
+  ];
+
+  const missing = required.filter(key => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required env vars: ${missing.join(', ')}`);
+  }
+}
+
+// Call at top of entry file (before any other code)
+// src/index.ts
+import { validateRequiredEnvVars } from './utils/validate-env';
+
+validateRequiredEnvVars();  // Fail fast if env vars missing
+
+// Rest of application code...
+```
+
+---
+
+### 9.4 Vercel Monorepo Build Failures
+
+**Description**: Vercel can't find `package.json` or dependencies in monorepo subdirectories.
+
+**Real-World Impact**: 18 hours debugging across zmartV0.69 and kektechV0.69
+
+**Symptoms**:
+```
+Build Error: Cannot find package.json
+Deployment failed
+```
+
+**Root Cause**: Vercel defaults to deploying from repository root.
+
+**Solution**: Add `vercel.json` to repository root
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next",
+  "installCommand": "cd ../.. && pnpm install",
+  "rootDirectory": "frontend",  // ← MOST CRITICAL
+  "framework": "nextjs"
+}
+```
+
+**For packages/ structure**:
+```json
+{
+  "rootDirectory": "packages/frontend",
+  "installCommand": "cd ../.. && pnpm install"
+}
+```
+
+**Add `.npmrc`** (for dependency resolution):
+```ini
+shamefully-hoist=true
+strict-peer-dependencies=false
+auto-install-peers=true
+node-linker=hoisted
+```
+
+**Test locally**:
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Test build
+vercel build
+
+# Should succeed with correct rootDirectory
+```
+
+---
+
+### 9.5 Database Schema Drift (Production Crashes)
+
+**Description**: Database schema changes but application code not updated.
+
+**Real-World Impact**: zmartV0.69 INCIDENT-001 - market-monitor service crashed
+
+**Symptoms**:
+```typescript
+// Code expects column 'wallet_address'
+const user = await prisma.user.findUnique({ where: { wallet_address } });
+
+// But database has column 'address'
+// Result: Column not found error
+```
+
+**Prevention**: Generate types from database schema
+
+```bash
+# 1. Define schema (prisma/schema.prisma)
+model User {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique @map("wallet_address")  // ← DB column name
+  username      String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+# 2. Generate Prisma client (auto-generates TypeScript types)
+npx prisma generate
+
+# 3. Run migrations BEFORE deploying code
+npx prisma migrate deploy
+```
+
+**Validation on Startup**:
+```typescript
+// src/utils/validate-schema.ts
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+export async function validateDatabaseSchema() {
+  try {
+    // Try a simple query to verify schema
+    await prisma.$queryRaw`SELECT 1 FROM users LIMIT 1`;
+    logger.info('Database schema validation passed');
+  } catch (error) {
+    logger.error('Database schema mismatch detected!', error);
+    throw new Error('Database schema validation failed - run migrations first');
+  }
+}
+
+// Call in entry file
+validateDatabaseSchema();
+```
+
+---
+
+### 9.6 Prisma Build-Time Dependencies (Vercel Build Fails)
+
+**Description**: `DATABASE_URL` not available during Vercel build, but Prisma client initialized at module level.
+
+**Real-World Impact**: kektechV0.69 - multiple commits fixing Prisma initialization
+
+**Symptoms**:
+```
+Build Error: DATABASE_URL is required but not defined
+```
+
+**BROKEN Code**:
+```typescript
+// lib/db.ts (BROKEN)
+import { PrismaClient } from '@prisma/client';
+
+// ❌ This runs at import time, BEFORE DATABASE_URL is available
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL, // undefined during build!
+});
+
+export default prisma;
+```
+
+**WORKING Code** (Lazy Initialization):
+```typescript
+// lib/db.ts (WORKING)
+import { PrismaClient } from '@prisma/client';
+
+let prisma: PrismaClient | undefined;
+
+export async function getPrisma(): Promise<PrismaClient> {
+  if (!prisma) {
+    // Only initialize when actually needed (runtime)
+    prisma = new PrismaClient({
+      datasourceUrl: process.env.DATABASE_URL, // Available at runtime
+    });
+  }
+  return prisma;
+}
+
+// For development hot reload
+if (process.env.NODE_ENV !== 'production') {
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient();
+  }
+  prisma = (global as any).prisma;
+}
+```
+
+**Usage**:
+```typescript
+// app/api/markets/route.ts
+import { getPrisma } from '@/lib/db';
+
+export async function GET() {
+  const prisma = await getPrisma(); // Lazy init
+  const markets = await prisma.market.findMany();
+  return Response.json(markets);
+}
+```
+
+**Add to package.json**:
+```json
+{
+  "scripts": {
+    "postinstall": "prisma generate"  // Auto-generate client after install
+  }
+}
+```
+
+---
+
+### 9.7 Parameter Mismatches (40+ Commits in kektechV0.69)
+
+**Description**: Frontend uses `address`, backend expects `walletAddress`.
+
+**Real-World Impact**: kektechV0.69 - 40+ commits fixing these mismatches
+
+**Example**:
+```typescript
+// Backend API (commit 1)
+export async function voteOnComment(walletAddress: string, commentId: string) {
+  // ...
+}
+
+// Frontend (NOT updated)
+await fetch('/api/comments/vote', {
+  body: JSON.stringify({ address, commentId }), // ❌ Wrong field name
+});
+
+// Result: Silent failure, vote not saved
+```
+
+**Prevention**: Shared TypeScript types
+
+```typescript
+// packages/shared/src/types/api.ts
+export interface VoteOnCommentRequest {
+  walletAddress: string;  // ✅ Single source of truth
+  commentId: string;
+  vote: number;
+}
+
+// Backend validates
+import { VoteOnCommentRequestSchema } from '@my-project/shared/schemas';
+
+app.post('/api/comments/vote', validateBody(VoteOnCommentRequestSchema), async (req, res) => {
+  const { walletAddress, commentId, vote } = req.body;  // ✅ Type-safe
+  // If frontend sends wrong field name, validation fails
+});
+
+// Frontend uses same types
+import type { VoteOnCommentRequest } from '@my-project/shared/types';
+
+const request: VoteOnCommentRequest = {
+  walletAddress,  // ✅ TypeScript enforces correct field name
+  commentId,
+  vote
+};
+```
+
+**Add Zod validation**:
+```typescript
+// packages/shared/src/schemas/api.ts
+import { z } from 'zod';
+
+export const VoteOnCommentRequestSchema = z.object({
+  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  commentId: z.string().uuid(),
+  vote: z.number().int().min(-1).max(1),
+});
+```
+
+**See Guide 18** for complete integration patterns.
+
+---
+
 ## Testing Recommendations
 
 ### Edge Case Test Suite
@@ -1726,13 +2236,20 @@ class EdgeCaseMonitor {
 | Private Key Compromise | CRITICAL | Medium | 🔥 P0 | High |
 | Reentrancy Attack | CRITICAL | Medium | 🔥 P0 | Low |
 | Oracle Manipulation | CRITICAL | Medium | 🔥 P0 | Medium |
+| PM2 Crash Loops | HIGH | High | ⚠️ P1 | Low |
 | Nonce Collision | HIGH | High | ⚠️ P1 | Medium |
 | Blockhash Expiration (Solana) | HIGH | High | ⚠️ P1 | Low |
 | RPC Rate Limiting | HIGH | Very High | ⚠️ P1 | Low |
+| Vercel Monorepo Build | HIGH | High | ⚠️ P1 | Low |
 | Chain Reorg | HIGH | Low | ⚠️ P1 | Medium |
+| HTTPS/WSS Mixed Content | MEDIUM | High | 📋 P2 | Medium |
+| Parameter Mismatches | MEDIUM | High | 📋 P2 | Low |
 | MEV Sandwich | MEDIUM | High | 📋 P2 | High |
 | Gas Price Spike | MEDIUM | Medium | 📋 P2 | Low |
+| Environment Variable Newlines | MEDIUM | Medium | 📋 P2 | Low |
+| Database Schema Drift | MEDIUM | Medium | 📋 P2 | Low |
 | WebSocket Leak | MEDIUM | Medium | 📋 P2 | Low |
+| Prisma Build-Time | LOW | Medium | 📋 P3 | Low |
 | Cache Staleness | LOW | High | 📋 P3 | Low |
 
 ---
