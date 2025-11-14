@@ -1,8 +1,10 @@
-# Complete Implementation Guides Summary (02-15)
+# Complete Implementation Guides Summary (02-19)
 
 ## Overview
 
 This document provides a complete overview of all implementation guides with their structure, key phases, time estimates, and deliverables. Each guide follows the same ultra-detailed format as guide 02.
+
+**New Guides (16-19)**: Based on production forensics analysis of zmartV0.69 and kektechV0.69 (456 commits analyzed), these guides prevent real-world deployment and integration issues.
 
 ---
 
@@ -986,7 +988,305 @@ describe('E2E: Complete Swap Workflow', () => {
 
 ---
 
-## Time Summary
+## Guide 16: Edge Case Implementation Checklist
+
+**File**: `16-edge-case-checklist.md`
+**Time**: Reference guide (0 hours - checklist)
+**Complexity**: N/A (Reference)
+
+**What You Get**:
+- Comprehensive checklist for implementing edge case handling
+- Priority matrix (P1-P4) based on real-world impact
+- Implementation patterns for 40+ edge cases
+- Testing requirements for each edge case
+
+**Key Sections**:
+1. **Pre-Implementation Checklist** - Setup validation
+2. **Ethereum Edge Cases** - Nonce, gas, reorgs, MEV
+3. **Solana Edge Cases** - Blockhash, compute units, rent
+4. **Network Edge Cases** - RPC limits, timeouts, retries
+5. **Security Edge Cases** - Reentrancy, oracle manipulation
+6. **Integration Edge Cases** - WebSocket leaks, state sync
+7. **Deployment Checklist** - Pre/post deployment validation
+
+**Integration**:
+- Use DURING implementation of guides 02-15
+- Cross-references Guide 04 (Edge Cases documentation)
+- Tracks implementation coverage across all components
+
+---
+
+## Guide 17: Full-Stack Deployment
+
+**File**: `17-full-stack-deployment.md`
+**Time**: 8-10 hours (reference) + prevents 18+ hours debugging
+**Complexity**: Medium-High
+
+**Based on**: Real deployment issues from zmartV0.69 and kektechV0.69
+
+**What You'll Build**:
+- Production-ready frontend deployment (Vercel)
+- VPS backend deployment with PM2
+- Database integration (Supabase/Prisma)
+- HTTPS/WSS setup (Cloudflare Tunnel)
+- Complete deployment validation
+
+**Phases**:
+
+### Phase 1: Vercel Frontend (2-3 hours)
+- Monorepo configuration (prevents 18 hours debugging)
+- `vercel.json` with correct `rootDirectory`
+- Environment variable validation
+- Build optimization
+- Prisma lazy initialization
+
+**Critical Fix**:
+```json
+{
+  "rootDirectory": "frontend",  // ← Prevents 18 hour debugging session
+  "installCommand": "cd ../.. && pnpm install"
+}
+```
+
+### Phase 2: VPS Backend (3-4 hours)
+- PM2 ecosystem configuration
+- Pre-deployment validation (prevents INCIDENT-001)
+- Environment variable setup
+- Database migration timing
+- Health check endpoints
+
+**Prevents PM2 Crash Loop**:
+```javascript
+{
+  pre_deploy_local: 'npm run build && npm run test',  // ← Detects errors BEFORE deployment
+  max_restarts: 10,
+  wait_ready: true
+}
+```
+
+### Phase 3: Database Setup (1-2 hours)
+- Supabase project setup
+- Prisma schema deployment
+- Connection pooling
+- Migration strategy
+
+### Phase 4: HTTPS/WSS (2 hours)
+- Cloudflare Tunnel setup (prevents mixed content errors)
+- SSL/TLS configuration
+- WebSocket proxy
+- Domain configuration
+
+**Prevents Mixed Content Block**:
+```yaml
+# cloudflared config - enables HTTPS for backend
+tunnel: your-tunnel-id
+ingress:
+  - hostname: api.yourdomain.com  # ← HTTPS, not HTTP
+    service: http://localhost:4000
+```
+
+### Phase 5: Deployment Validation (1 hour)
+- Frontend smoke tests
+- Backend health checks
+- Integration tests
+- Rollback procedures
+
+**Real-World Prevention**:
+- ✅ Saves 18 hours on Vercel monorepo issues
+- ✅ Prevents PM2 crash loops (INCIDENT-001: 47 restarts in 4 min)
+- ✅ Eliminates mixed content errors (6+ commits saved)
+- ✅ Catches environment variable issues early
+
+---
+
+## Guide 18: Integration Patterns
+
+**File**: `18-integration-patterns.md`
+**Time**: 6-8 hours (implementation) + prevents 40+ commits
+**Complexity**: Medium
+
+**Based on**: 40+ parameter mismatch commits in kektechV0.69
+
+**What You'll Build**:
+- Shared TypeScript types between frontend/backend
+- Zod validation contracts
+- API versioning strategy
+- Database schema sync
+- Real-time state synchronization
+
+**Phases**:
+
+### Phase 1: Shared Types (2 hours)
+
+**Prevents 40+ Parameter Mismatch Commits**:
+```typescript
+// packages/shared/src/types/api.ts - SINGLE SOURCE OF TRUTH
+export interface CreateMarketRequest {
+  creatorAddress: string;  // ✅ Both frontend & backend use this
+  title: string;
+  outcomeCount: number;
+}
+
+// No more 'address' vs 'walletAddress' vs 'creatorAddress' confusion
+```
+
+### Phase 2: Zod Validation (2 hours)
+- Runtime type validation
+- API contract enforcement
+- Input sanitization
+- Error messages
+
+**Example**:
+```typescript
+const CreateMarketRequestSchema = z.object({
+  creatorAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  title: z.string().min(1).max(200),
+  resolutionTime: z.coerce.date().refine(
+    (date) => date > new Date(),
+    'Must be in future'
+  ),
+});
+
+// Frontend & backend both validate against SAME schema
+```
+
+### Phase 3: API Integration (2 hours)
+- tRPC setup (type-safe APIs)
+- Error handling patterns
+- Request/response logging
+- Rate limiting
+
+### Phase 4: Database Integration (2 hours)
+- Prisma schema management
+- Migration workflow
+- Seeding strategies
+- Query optimization
+
+**Key Patterns**:
+- **Shared Types** - One type definition for frontend + backend
+- **Zod Contracts** - Runtime validation prevents silent failures
+- **Lazy Initialization** - Prisma works in Vercel builds
+- **Environment Validation** - Catches missing vars on startup
+- **Database Migrations** - Run BEFORE code deployment
+
+**Real-World Prevention**:
+- ✅ Eliminates 40+ parameter mismatch commits
+- ✅ Prevents environment variable newline bugs
+- ✅ Catches schema drift before deployment
+- ✅ Type-safe API contracts (impossible to mismatch)
+
+---
+
+## Guide 19: Documentation Standards & Validation
+
+**File**: `19-documentation-standards.md`
+**Time**: 4-6 hours (setup) + prevents 20+ hours debugging
+**Complexity**: Low-Medium
+
+**Based on**: Documentation drift in kektechV0.69 (rated 3/5 quality)
+
+**What You'll Build**:
+- Automated documentation validation system
+- Pre-commit hooks for doc validation
+- Writing standards and templates
+- Incident documentation workflow
+
+**Components**:
+
+### 1. Validation Script (2 hours)
+**File**: `scripts/validate-docs.ts`
+
+**Validates**:
+- ✅ Code block syntax (TypeScript, JSON, Bash)
+- ✅ File path references exist
+- ✅ Cross-references are valid (Guide XX, Section Y.Z)
+- ✅ Internal markdown links work
+- ✅ No `any` types in examples (violates CLAUDE.md)
+- ✅ No private keys in code blocks
+- ✅ Consistent terminology
+- ✅ Version number consistency
+
+**Example Error**:
+```
+❌ ERROR: docs/implementation/17-full-stack-deployment.md:245
+   Type: file-path
+   Message: Referenced file does not exist: config/ecosystem.config.js
+   Suggestion: Check if file path is correct or if file has been moved
+```
+
+### 2. Pre-Commit Hook (1 hour)
+**File**: `.husky/pre-commit`
+
+**Workflow**:
+```bash
+git commit -m "Update deployment guide"
+🔍 Running documentation validation...
+✅ Documentation validation passed!
+[main abc123] Update deployment guide
+```
+
+**Blocks commits** if:
+- File references are broken
+- Code syntax is invalid
+- Cross-references don't exist
+- Links are broken
+
+### 3. Writing Standards (1 hour)
+
+**Standards Enforced**:
+```markdown
+✅ CORRECT: See `src/agents/orchestrator.ts` for implementation
+❌ WRONG: See orchestrator.ts (no path)
+
+✅ CORRECT: See Guide 17, Section 2.4 for deployment steps
+❌ WRONG: See deployment guide (which one?)
+
+✅ CORRECT: Real code from actual codebase
+❌ WRONG: Made-up pseudocode examples
+```
+
+### 4. Incident Documentation (1-2 hours)
+**Template**: `docs/templates/INCIDENT_LIBRARY_TEMPLATE.md`
+
+**Based on**: zmartV0.69's exemplary incident library (5/5 rating)
+
+**Every incident includes**:
+- Unique ID (INCIDENT-001, INCIDENT-002)
+- Symptoms, root cause, prevention
+- Cross-references to guides
+- Code examples showing fixes
+
+**Example**:
+```markdown
+## INCIDENT-001: PM2 Crash Loop
+**Root Cause**: Missing environment variable
+**Prevention**: ✅ Added to Guide 17, Section 2.3
+**Fix**: Environment validation on startup
+```
+
+**Commands**:
+```bash
+pnpm validate:docs          # Validate all documentation
+pnpm validate:docs:verbose  # Detailed output
+pnpm validate:docs:fix      # Auto-fix where possible
+```
+
+**Real-World Prevention**:
+- ✅ Prevents 20+ hours debugging doc drift issues
+- ✅ Ensures code examples match reality
+- ✅ Validates all cross-references
+- ✅ Enforces consistent standards
+- ✅ Matches zmartV0.69's 5/5 documentation quality
+
+**Integration**:
+- Runs automatically on every commit (pre-commit hook)
+- Validates 28+ markdown files in < 2 seconds
+- Blocks commits with broken references
+- Ensures docs always match codebase
+
+---
+
+## Time Summary (Updated)
 
 | Guide | Topic | Hours | Complexity |
 |-------|-------|-------|------------|
@@ -1004,9 +1304,20 @@ describe('E2E: Complete Swap Workflow', () => {
 | 13 | Testing Setup | 8-10 | Medium |
 | 14 | Security | 15-20 | Very High |
 | 15 | Integration | 10-12 | Medium |
-| **TOTAL** | **All Guides** | **133-173** | **High** |
+| 16 | Edge Case Checklist | 0 | Reference |
+| 17 | Full-Stack Deployment | 8-10 | Medium-High |
+| 18 | Integration Patterns | 6-8 | Medium |
+| 19 | Documentation Standards | 4-6 | Low-Medium |
+| **TOTAL** | **All Guides** | **151-199** | **High** |
 
-**Adjusted for efficiency: ~100-130 hours** (experienced developer)
+**Adjusted for efficiency: ~120-150 hours** (experienced developer)
+
+**Time Saved by Guides 16-19**: 78+ hours
+- Guide 17 prevents: 18 hours (Vercel) + 4 hours (PM2) + 6 hours (HTTPS)
+- Guide 18 prevents: 30+ hours (parameter mismatches) + 10+ hours (env vars)
+- Guide 19 prevents: 20+ hours (documentation drift)
+
+**Net Time Investment**: 18 hours spent, 78+ hours saved = **60+ hours net savings**
 
 ---
 

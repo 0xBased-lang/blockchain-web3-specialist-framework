@@ -1,0 +1,37 @@
+{
+  "name": "blockchain-web3-specialist-framework",
+  "version": "0.1.0",
+  "description": "Comprehensive framework for building blockchain Web3 AI specialist agents with MCP integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:docs": "tsx scripts/validate-docs.ts",
+    "validate:docs:verbose": "tsx scripts/validate-docs.ts --verbose",
+    "validate:docs:fix": "tsx scripts/validate-docs.ts --fix",
+    "precommit": "pnpm validate:docs",
+    "prepare": "husky install || true"
+  },
+  "keywords": [
+    "blockchain",
+    "web3",
+    "ethereum",
+    "solana",
+    "mcp",
+    "ai",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "glob": "^10.3.10",
+    "husky": "^8.0.3",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

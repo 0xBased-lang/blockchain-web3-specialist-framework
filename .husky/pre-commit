@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run documentation validation before commit
+echo "🔍 Running documentation validation..."
+pnpm validate:docs
+
+# Exit with error code if validation fails
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Documentation validation failed!"
+  echo "   Fix errors before committing or use 'git commit --no-verify' to skip (not recommended)"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Documentation validation passed!"
