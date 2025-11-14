@@ -454,6 +454,84 @@ contract MockERC20 {
 
 ---
 
+## Parallel Verification Workflow
+
+### Pattern: Independent Review
+
+Use multiple Claude Code instances for independent verification to catch issues that a single instance might miss.
+
+#### Setup: Multiple Terminal Sessions
+
+```bash
+# Terminal 1: Implementation Claude
+claude  # Implement feature X
+
+# Terminal 2: Review Claude (separate session)
+claude  # Review implementation of feature X independently
+```
+
+#### Benefits
+
+- **Independent verification** catches issues single instance misses
+- **Parallel development** speeds up implementation
+- **Separate contexts** avoid cross-contamination
+- **Higher code quality** through multiple perspectives
+
+#### Example Workflow
+
+**Terminal 1 (Implementation)**:
+```bash
+# Implement Ethereum MCP server
+claude
+
+> "Implement the Ethereum MCP server according to guide 02"
+> [Claude implements the server]
+```
+
+**Terminal 2 (Review)**:
+```bash
+# Start fresh review session
+claude
+
+> "Review the Ethereum MCP server implementation in src/mcp-servers/ethereum/"
+> "Check for security issues, validate error handling, ensure all tools are properly implemented"
+> [Claude independently reviews and finds issues]
+```
+
+#### Git Worktrees for Parallel Work
+
+For working on multiple features simultaneously:
+
+```bash
+# Create separate worktrees for parallel features
+git worktree add ../framework-ethereum-mcp ethereum-mcp
+git worktree add ../framework-solana-mcp solana-mcp
+
+# Work on both simultaneously with different Claude instances
+# Terminal 1
+cd ../framework-ethereum-mcp && claude
+
+# Terminal 2
+cd ../framework-solana-mcp && claude
+```
+
+#### When to Use Parallel Verification
+
+- **After major implementations**: New MCP servers, agents, security-critical code
+- **Before releases**: Final verification of all changes
+- **For security-critical code**: 100% coverage areas (wallet, transactions)
+- **Complex refactoring**: When making significant architectural changes
+
+#### Best Practices
+
+1. **Clear session separation**: Use /clear between major tasks in each session
+2. **Context independence**: Don't share context between instances - let each work independently
+3. **Document findings**: Each instance should document its findings separately
+4. **Reconcile differences**: Compare findings and discuss discrepancies
+5. **Fresh perspectives**: Start review sessions without bias from implementation
+
+---
+
 ## Testing Checklist
 
 Before each release:
@@ -468,9 +546,11 @@ Before each release:
 - [ ] No mainnet tests
 - [ ] All mocks properly isolated
 - [ ] Flaky tests fixed or marked
+- [ ] **Parallel verification completed** for critical code
+- [ ] Independent Claude review passed
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: 2025-11-14
+**Document Version**: 1.1.0
+**Last Updated**: 2025-11-14 (Added parallel verification workflow)
 **Review Frequency**: After each sprint
