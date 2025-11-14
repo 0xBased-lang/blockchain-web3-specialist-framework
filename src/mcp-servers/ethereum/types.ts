@@ -89,7 +89,8 @@ export type SendTransactionParams = z.infer<typeof SendTransactionParamsSchema>;
  */
 export const CallContractParamsSchema = z.object({
   address: AddressSchema,
-  abi: z.array(z.record(z.string(), z.unknown())), // ABI fragment array
+  // Support both human-readable ABI strings and JSON ABI fragments
+  abi: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
   method: z.string(),
   args: z.array(z.unknown()).optional(),
   blockTag: z.union([z.number(), z.literal('latest'), z.literal('pending')]).optional(),
@@ -102,7 +103,8 @@ export type CallContractParams = z.infer<typeof CallContractParamsSchema>;
  */
 export const DeployContractParamsSchema = z.object({
   bytecode: HexSchema,
-  abi: z.array(z.record(z.string(), z.unknown())),
+  // Support both human-readable ABI strings and JSON ABI fragments
+  abi: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
   constructorArgs: z.array(z.unknown()).optional(),
   gasLimit: BigIntSchema.optional(),
   gasPrice: BigIntSchema.optional(),

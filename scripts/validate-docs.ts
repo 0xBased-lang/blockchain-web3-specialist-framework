@@ -661,8 +661,8 @@ function main(): void {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (ES module check)
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
