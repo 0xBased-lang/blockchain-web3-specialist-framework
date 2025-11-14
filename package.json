@@ -1,14 +1,33 @@
 {
   "name": "blockchain-web3-specialist-framework",
   "version": "0.1.0",
-  "description": "Comprehensive framework for building blockchain Web3 AI specialist agents with MCP integration",
+  "description": "AI-powered blockchain/Web3 framework with MCP servers, agents, and skills",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:integration": "vitest --config vitest.integration.config.ts",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist coverage .turbo node_modules/.cache",
     "validate:docs": "tsx scripts/validate-docs.ts",
     "validate:docs:verbose": "tsx scripts/validate-docs.ts --verbose",
     "validate:docs:fix": "tsx scripts/validate-docs.ts --fix",
-    "precommit": "pnpm validate:docs",
+    "precommit": "pnpm typecheck && pnpm lint && pnpm validate:docs",
     "prepare": "husky install || true"
   },
   "keywords": [
@@ -17,21 +36,51 @@
     "ethereum",
     "solana",
     "mcp",
-    "ai",
-    "agent"
+    "ai-agents",
+    "defi",
+    "nft"
   ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xBased-lang/blockchain-web3-specialist-framework.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0xBased-lang/blockchain-web3-specialist-framework/issues"
+  },
+  "homepage": "https://github.com/0xBased-lang/blockchain-web3-specialist-framework#readme",
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitest/coverage-v8": "^1.0.4",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
     "glob": "^10.3.10",
     "husky": "^8.0.3",
+    "prettier": "^3.1.1",
+    "tsup": "^8.0.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
   },
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@8.15.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.13.0",
+    "p-limit": "^7.2.0",
+    "p-retry": "^7.1.0",
+    "winston": "^3.18.3",
+    "zod": "^4.1.12"
+  }
 }
