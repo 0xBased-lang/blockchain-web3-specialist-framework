@@ -94,6 +94,77 @@ tests/
 4. **Gas Estimation**: Add 20% buffer to estimates
 5. **Chain Reorgs**: Wait for 12+ confirmations on Ethereum
 
+## Real-World Deployment Gotchas ⚠️ CRITICAL
+
+**Source**: Production analysis of 456 commits from zmartV0.69 and kektechV0.69
+
+These issues cost real projects 40% of development time. **Read before deployment**:
+
+### Deployment Issues
+
+1. **Vercel Monorepo**: ALWAYS set `rootDirectory` in `vercel.json`
+   - **Cost**: 18 hours debugging if you don't
+   - **Fix**: `{"rootDirectory": "frontend", "installCommand": "cd ../.. && pnpm install"}`
+   - **See**: Guide 17, Section 1.1
+
+2. **PM2 Crashes**: Check compiled files exist BEFORE blaming code
+   - **Symptom**: PM2 shows "online" but restarts every 5 seconds
+   - **Cost**: Production down for hours (INCIDENT-001: 47 restarts in 4 minutes)
+   - **Fix**: Run `test -f dist/index.js || npm run build` before `pm2 start`
+   - **See**: Guide 04, Section 9.3
+
+3. **Mixed Content**: Use HTTPS for ALL production APIs
+   - **Problem**: Frontend HTTPS + Backend HTTP = blocked by browser
+   - **Cost**: 6 commits, multiple hours debugging
+   - **Fix**: Cloudflare Tunnel for backend HTTPS
+   - **See**: Guide 17, Section 2.4
+
+### Integration Issues
+
+4. **API Parameters**: Share TypeScript types between frontend/backend
+   - **Cost**: 40+ commits fixing parameter mismatches if you don't
+   - **Example**: `address` vs `walletAddress` causing silent failures
+   - **Fix**: Use `packages/shared/` with Zod validation
+   - **See**: Guide 18, Section 1.1
+
+5. **Environment Variables**: Validate on startup, watch for newlines
+   - **Problem**: Invisible `\n` in `.env` breaks API URLs silently
+   - **Cost**: 3 commits, hours of debugging
+   - **Fix**: Run `cat .env | od -c` to detect, use validation script
+   - **See**: Guide 17, Section 1.2.4
+
+6. **Database Migrations**: Run BEFORE deployment, not after
+   - **Problem**: Schema drift causes production crashes
+   - **Cost**: Services crash on startup
+   - **Fix**: `npx prisma migrate deploy` before deploying code
+   - **See**: Guide 18, Section 2.2
+
+### Build & Compilation
+
+7. **Prisma in Vercel**: Use lazy initialization
+   - **Problem**: `DATABASE_URL` not available at build time
+   - **Cost**: Multiple commits fixing initialization
+   - **Fix**: `getPrisma()` function instead of `new PrismaClient()`
+   - **See**: Guide 17, Section 1.3.1
+
+8. **TypeScript Strict**: Migrate incrementally, not all at once
+   - **Problem**: Flipping strict mode creates 70+ errors instantly
+   - **Cost**: Days of work fixing type errors
+   - **Fix**: Enable strict checks gradually per-file
+   - **See**: kektechV0.69 commit `1b910b2`
+
+### Runtime Issues
+
+9. **WebSocket Lifecycle**: Proper cleanup prevents memory leaks
+   - **Problem**: Event listeners not removed on disconnect
+   - **Fix**: `ws.removeAllListeners()` + process exit handlers
+   - **See**: Guide 04, Section 7.1
+
+10. **Health Checks**: Add to ALL services
+    - **Purpose**: How you detect PM2 crash loops early
+    - **Fix**: `/health` endpoint + `pm2 status` monitoring
+    - **See**: Guide 17, Section 2.5
+
 ## Recent Changes
 
 - 2025-11-14: **CRITICAL**: Added comprehensive edge case analysis (40+ edge cases)
