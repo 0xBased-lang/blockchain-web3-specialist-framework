@@ -36,8 +36,11 @@ This framework integrates AI agents with blockchain technology through the Model
 
 1. **Project Overview**: [`docs/planning/01-project-overview.md`](./docs/planning/01-project-overview.md)
 2. **Architecture**: [`docs/architecture/01-system-architecture.md`](./docs/architecture/01-system-architecture.md)
-3. **Risks & Security**: [`docs/risks/03-corruption-scenarios.md`](./docs/risks/03-corruption-scenarios.md)
-4. **Testing**: [`docs/testing/01-testing-strategy.md`](./docs/testing/01-testing-strategy.md)
+3. **Edge Cases**: [`docs/risks/04-comprehensive-edge-cases.md`](./docs/risks/04-comprehensive-edge-cases.md) ⚠️ **CRITICAL**
+4. **Edge Case Checklist**: [`docs/implementation/16-edge-case-checklist.md`](./docs/implementation/16-edge-case-checklist.md)
+5. **Risks & Security**: [`docs/risks/03-corruption-scenarios.md`](./docs/risks/03-corruption-scenarios.md)
+6. **Testing**: [`docs/testing/01-testing-strategy.md`](./docs/testing/01-testing-strategy.md)
+7. **Optimization**: [`docs/optimization/OPTIMIZATION_RECOMMENDATIONS.md`](./docs/optimization/OPTIMIZATION_RECOMMENDATIONS.md)
 
 ## 📁 Repository Structure
 
@@ -103,16 +106,21 @@ blockchain-web3-specialist-framework/
 
 ## 🔒 Security
 
-This framework prioritizes security:
+This framework prioritizes security with production-ready edge case handling:
 
 - **No Mainnet Testing**: All development on testnets
-- **Private Key Encryption**: Keys never stored in plaintext
+- **Private Key Encryption**: AES-256-GCM, keys never stored in plaintext
 - **Input Validation**: Zod schemas for all inputs
 - **Security Audits**: Slither + Mythril integration
 - **Rate Limiting**: Protection against abuse
-- **Comprehensive Testing**: 80%+ code coverage
+- **Comprehensive Testing**: 80%+ code coverage (100% for security-critical code)
+- **Edge Case Handling**: 40+ edge cases documented with mitigations
+- **Production Patterns**: Based on 2024-2025 real-world incidents
 
-See [`docs/risks/03-corruption-scenarios.md`](./docs/risks/03-corruption-scenarios.md) for details.
+**Critical Documents**:
+- [`docs/risks/04-comprehensive-edge-cases.md`](./docs/risks/04-comprehensive-edge-cases.md) - ⚠️ **Must read before production**
+- [`docs/implementation/16-edge-case-checklist.md`](./docs/implementation/16-edge-case-checklist.md) - Implementation checklist
+- [`docs/risks/03-corruption-scenarios.md`](./docs/risks/03-corruption-scenarios.md) - Corruption prevention
 
 ## 📚 Documentation
 

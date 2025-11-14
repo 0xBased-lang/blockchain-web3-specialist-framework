@@ -96,10 +96,30 @@ tests/
 
 ## Recent Changes
 
+- 2025-11-14: **CRITICAL**: Added comprehensive edge case analysis (40+ edge cases)
+- 2025-11-14: Added edge case implementation checklist (Guide 16)
 - 2025-11-14: Added complete implementation guides (02-15)
 - 2025-11-14: Created MCP server architecture
 - 2025-11-14: Documented all corruption scenarios
 - 2025-11-14: Added optimization recommendations based on official best practices
+
+## Edge Cases ⚠️ CRITICAL
+
+**MUST READ before production**: `docs/risks/04-comprehensive-edge-cases.md`
+
+Common edge cases you WILL encounter:
+1. **Nonce collisions** in concurrent transactions → Use NonceManager with Redis
+2. **Blockhash expiration** on Solana (~79 seconds) → Refresh blockhash, use durable nonces
+3. **Chain reorgs** (12+ blocks on Ethereum) → Wait for deep confirmations
+4. **RPC rate limiting** (5-10 req/sec) → Use Bottleneck + multi-provider failover
+5. **Gas price spikes** (>500 gwei) → Enforce ceiling, add warnings
+6. **MEV sandwich attacks** ($289M in 2024) → Flashbots + slippage protection
+7. **Oracle manipulation** (>$100M stolen) → Use Chainlink + TWAP
+8. **Reentrancy** ($47M in 2024) → NonReentrant guards
+9. **Private key compromise** ($449M in 2024) → Multi-sig + hardware wallets
+10. **WebSocket leaks** → Proper cleanup + lifecycle management
+
+See `docs/implementation/16-edge-case-checklist.md` for implementation checklist.
 
 ## Development Workflow
 
@@ -113,7 +133,9 @@ tests/
 ## Need Help?
 
 - Architecture: `docs/architecture/01-system-architecture.md`
-- Implementation: `docs/implementation/` (guides 00-15)
+- Implementation: `docs/implementation/` (guides 00-16)
+- **Edge Cases**: `docs/risks/04-comprehensive-edge-cases.md` ⚠️ **READ THIS**
+- **Edge Case Checklist**: `docs/implementation/16-edge-case-checklist.md`
 - Security: `docs/risks/03-corruption-scenarios.md`
 - Testing: `docs/testing/01-testing-strategy.md`
 - Optimization: `docs/optimization/OPTIMIZATION_RECOMMENDATIONS.md`
