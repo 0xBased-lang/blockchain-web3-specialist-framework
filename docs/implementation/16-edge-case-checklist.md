@@ -420,24 +420,251 @@ Before deploying to production:
 
 ---
 
+## Deployment Checklist
+
+**Source**: Forensic analysis of zmartV0.69 and kektechV0.69 (456 commits analyzed)
+**Impact Prevention**: 40% of development time (18+ hours saved per project)
+
+### Pre-Deployment Validation
+
+**Environment Variables**:
+- [ ] All variables documented in `.env.example` with descriptions
+- [ ] Environment validation script created (`scripts/validate-env.sh`)
+- [ ] No trailing newlines in `.env` files (`cat .env | od -c`)
+- [ ] No Windows line endings (CRLF) in `.env` files
+- [ ] Zod schema validates all environment variables on startup
+- [ ] Required vs optional variables clearly marked
+- [ ] Sensitive variables flagged for Vercel encryption
+- [ ] Test: Run `pnpm validate:env` successfully
+
+**Build Verification**:
+- [ ] TypeScript compilation succeeds with 0 errors
+- [ ] All tests pass (`pnpm test`)
+- [ ] Compiled artifacts exist (`test -f dist/index.js`)
+- [ ] Prisma client generated (`npx prisma generate`)
+- [ ] Database migrations prepared (`npx prisma migrate status`)
+- [ ] No build-time dependencies on runtime variables (e.g., DATABASE_URL)
+- [ ] Test: Local build completes successfully (`vercel build` or `pnpm build`)
+
+**Code Quality**:
+- [ ] No `any` types (use proper TypeScript types)
+- [ ] Shared types between frontend/backend (`packages/shared/`)
+- [ ] Zod schemas for all API endpoints
+- [ ] Parameter names consistent (no `address` vs `walletAddress` mismatches)
+- [ ] Contract tests validate API schemas
+- [ ] Test: Contract tests pass
+
+---
+
+### Vercel Frontend Deployment (Monorepo)
+
+**Configuration Files**:
+- [ ] `vercel.json` exists in repository root
+- [ ] `rootDirectory` set to frontend location (`frontend/` or `packages/frontend/`)
+- [ ] `installCommand` runs from workspace root (`cd ../.. && pnpm install`)
+- [ ] `buildCommand` configured correctly
+- [ ] `outputDirectory` set to `.next`
+- [ ] `.npmrc` exists with correct hoisting settings
+- [ ] `package.json` has `"packageManager": "pnpm@8.x"` (or appropriate version)
+- [ ] Test: `vercel build` succeeds locally
+
+**Environment Variables (Vercel Dashboard)**:
+- [ ] All `NEXT_PUBLIC_*` variables added
+- [ ] Runtime variables added (DATABASE_URL, API keys, etc.)
+- [ ] "Sensitive" flag enabled for secrets
+- [ ] Variables set for all environments (Production, Preview, Development)
+- [ ] Test: Check `vercel env ls` shows all variables
+
+**Prisma/Database (if applicable)**:
+- [ ] Lazy initialization implemented (`getPrisma()` function)
+- [ ] No eager `new PrismaClient()` at module level
+- [ ] `postinstall` script generates Prisma client
+- [ ] No `DATABASE_URL` required during build
+- [ ] Test: Vercel build succeeds without DATABASE_URL
+
+**Post-Deployment Verification**:
+- [ ] HTTPS works (no browser warnings)
+- [ ] No console errors
+- [ ] All pages load correctly
+- [ ] API calls succeed (check Network tab)
+- [ ] No "Mixed Content" errors
+- [ ] Test: Visit production URL and verify functionality
+
+---
+
+### VPS Backend Deployment
+
+**Server Setup**:
+- [ ] SSH key authentication configured (no password login)
+- [ ] UFW firewall configured (SSH, HTTP, HTTPS, backend port)
+- [ ] fail2ban installed and running
+- [ ] Node.js 20+ installed (via nvm)
+- [ ] PM2 installed globally (`npm install -g pm2`)
+- [ ] PM2 startup script configured (`pm2 startup`)
+- [ ] Test: SSH into server successfully
+
+**PM2 Configuration**:
+- [ ] `ecosystem.config.js` created with all services
+- [ ] `pre_deploy_local: 'npm run build && npm run test'` configured
+- [ ] `max_restarts: 10` to prevent infinite loops
+- [ ] `min_uptime: '10s'` to detect crash loops
+- [ ] `wait_ready: true` for graceful startup
+- [ ] `max_memory_restart: '500M'` for leak protection
+- [ ] Log files configured (`error_file`, `out_file`)
+- [ ] Test: Validate config with `pm2 start ecosystem.config.js --dry-run`
+
+**Build & Deploy**:
+- [ ] TypeScript built (`npm run build`)
+- [ ] Compiled files verified (`test -f dist/index.js`)
+- [ ] Environment variables validated (`./scripts/validate-env.sh`)
+- [ ] Database migrations run (`npx prisma migrate deploy`)
+- [ ] PM2 processes started (`pm2 start ecosystem.config.js`)
+- [ ] PM2 process list saved (`pm2 save`)
+- [ ] Test: `pm2 status` shows all services "online" with 0 restarts
+
+**Crash Loop Detection**:
+- [ ] Monitor PM2 for 30 seconds after start
+- [ ] Check restart count is 0 or very low
+- [ ] Check uptime is increasing (not stuck at <10s)
+- [ ] Check logs are populating (`pm2 logs --lines 50`)
+- [ ] If crash loop detected: Check environment variables, verify build, check logs
+- [ ] Test: `pm2 status | grep -E 'online.*0.*[0-9]+m'` (should match)
+
+**HTTPS/WSS Configuration**:
+- [ ] Cloudflare Tunnel installed (`cloudflared`)
+- [ ] Tunnel created (`cloudflared tunnel create backend-api`)
+- [ ] DNS routed (`cloudflared tunnel route dns ...`)
+- [ ] Tunnel config created (`~/.cloudflared/config.yml`)
+- [ ] Tunnel running as service (`systemctl status cloudflared`)
+- [ ] Test: `curl https://api.yourdomain.com/health` returns 200
+
+**Health Checks**:
+- [ ] Health check endpoint implemented (`/health`)
+- [ ] Readiness endpoint implemented (`/ready`)
+- [ ] Health checks validate database connection
+- [ ] Health checks validate blockchain RPC connection
+- [ ] Automated health check script runs every 5 minutes (cron)
+- [ ] Test: `curl http://localhost:4000/health` returns { status: 'ok' }
+
+---
+
+### Post-Deployment Validation
+
+**Frontend Verification**:
+- [ ] HTTPS working (no warnings)
+- [ ] All pages accessible
+- [ ] Wallet connection works
+- [ ] API calls succeed
+- [ ] WebSocket connects (check Network → WS tab)
+- [ ] No "Mixed Content" errors in console
+- [ ] Dark mode works (if applicable)
+- [ ] No JavaScript errors in console
+- [ ] Test: Manual walkthrough of critical user flows
+
+**Backend Verification**:
+- [ ] All PM2 processes show "online"
+- [ ] No crash loops (restart count < 5)
+- [ ] Health checks return 200 OK
+- [ ] Logs show no errors
+- [ ] Database connection working
+- [ ] Blockchain RPC connection working
+- [ ] Environment variables loaded correctly
+- [ ] Test: `pm2 logs --lines 100` shows clean logs
+
+**Integration Verification**:
+- [ ] Frontend can call backend API (HTTPS → HTTPS)
+- [ ] WebSocket real-time updates working
+- [ ] Database writes from backend appear in frontend
+- [ ] Blockchain events trigger backend updates
+- [ ] CORS allows frontend requests
+- [ ] Test: Complete end-to-end user flow (e.g., create market, place bet)
+
+**Performance Verification**:
+- [ ] Page load time < 3 seconds
+- [ ] API response time < 500ms
+- [ ] WebSocket latency < 100ms
+- [ ] No memory leaks (stable over 1 hour)
+- [ ] CPU usage reasonable (< 50% average)
+- [ ] Test: Monitor for 1 hour, check metrics
+
+---
+
+### Rollback Procedures
+
+**Frontend (Vercel)**:
+- [ ] Document current deployment URL
+- [ ] Vercel Dashboard → Deployments → Previous deployment → "Promote to Production"
+- [ ] Alternative: `git revert HEAD && git push`
+- [ ] Test: Verify rollback restores functionality
+
+**Backend (VPS)**:
+- [ ] Script ready: `./scripts/rollback.sh`
+- [ ] Manual: `git reset --hard HEAD~1 && npm install && npm run build && pm2 reload all`
+- [ ] Database rollback: `npx prisma migrate resolve --rolled-back MIGRATION_NAME`
+- [ ] Test: Practice rollback in staging environment
+
+**Database**:
+- [ ] Backup taken before migrations
+- [ ] Rollback migration prepared (if breaking change)
+- [ ] Restore procedure documented
+- [ ] Test: Verify backup restore works
+
+---
+
+### Common Issues & Fixes
+
+**Vercel Build Fails: "Cannot find package.json"**:
+- Fix: Check `rootDirectory` in `vercel.json`
+- Fix: Verify `installCommand` runs from workspace root
+
+**Vercel Build Fails: "Prisma Client not generated"**:
+- Fix: Add `"postinstall": "prisma generate"` to `package.json`
+
+**Vercel Build Fails: "DATABASE_URL required"**:
+- Fix: Use lazy Prisma initialization (see Guide 18, Section 4.1)
+
+**PM2 Crash Loop (high restart count)**:
+- Fix 1: Check environment variables (`./scripts/validate-env.sh`)
+- Fix 2: Verify build completed (`test -f dist/index.js`)
+- Fix 3: Check logs (`pm2 logs --err`)
+
+**Mixed Content Error (HTTP blocked from HTTPS)**:
+- Fix: Use Cloudflare Tunnel for backend HTTPS (see Guide 17, Section 2.4)
+
+**API Calls Fail with DNS Error**:
+- Fix: Check for newline in environment variables (`cat .env | od -c`)
+
+**Parameter Mismatch (silent failures)**:
+- Fix: Use shared TypeScript types (see Guide 18, Section 1.1)
+
+---
+
 ## Edge Case Coverage Matrix
 
 Track edge case implementation across components:
 
-| Edge Case | MCP Eth | MCP Sol | MCP Multi | Orchestrator | Wallet | TX Builder | Gas Opt | Contract Analyzer |
-|-----------|---------|---------|-----------|--------------|--------|------------|---------|------------------|
-| Chain Reorg | ✅ | N/A | ✅ | ✅ | - | ✅ | - | - |
-| MEV Protection | ✅ | ⚠️ | ✅ | - | - | ✅ | - | - |
-| Gas Spikes | ✅ | N/A | ✅ | - | - | ✅ | ✅ | - |
-| Nonce Collision | ✅ | N/A | ✅ | - | - | ✅ | - | - |
-| RPC Rate Limit | ✅ | ✅ | ✅ | - | - | - | - | - |
-| Input Validation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Reentrancy | - | - | - | - | ✅ | - | - | ✅ |
-| Oracle Manip | ⚠️ | - | ⚠️ | ✅ | - | - | - | - |
-| Private Key | - | - | - | - | ✅ | - | - | - |
-| Blockhash Exp | N/A | ✅ | ✅ | - | - | - | - | - |
-| WS Leaks | ✅ | ✅ | ✅ | - | - | - | - | - |
-| Cache Stale | ✅ | ✅ | ✅ | ✅ | - | - | - | - |
+| Edge Case | MCP Eth | MCP Sol | MCP Multi | Orchestrator | Wallet | TX Builder | Gas Opt | Contract Analyzer | Frontend | Backend |
+|-----------|---------|---------|-----------|--------------|--------|------------|---------|------------------|----------|---------|
+| Chain Reorg | ✅ | N/A | ✅ | ✅ | - | ✅ | - | - | - | - |
+| MEV Protection | ✅ | ⚠️ | ✅ | - | - | ✅ | - | - | - | - |
+| Gas Spikes | ✅ | N/A | ✅ | - | - | ✅ | ✅ | - | - | - |
+| Nonce Collision | ✅ | N/A | ✅ | - | - | ✅ | - | - | - | - |
+| RPC Rate Limit | ✅ | ✅ | ✅ | - | - | - | - | - | - | - |
+| Input Validation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Reentrancy | - | - | - | - | ✅ | - | - | ✅ | - | - |
+| Oracle Manip | ⚠️ | - | ⚠️ | ✅ | - | - | - | - | - | - |
+| Private Key | - | - | - | - | ✅ | - | - | - | - | - |
+| Blockhash Exp | N/A | ✅ | ✅ | - | - | - | - | - | - | - |
+| WS Leaks | ✅ | ✅ | ✅ | - | - | - | - | - | ✅ | ✅ |
+| Cache Stale | ✅ | ✅ | ✅ | ✅ | - | - | - | - | ✅ | ✅ |
+| **Deployment Edge Cases** | | | | | | | | | | |
+| PM2 Crash Loop | - | - | - | - | - | - | - | - | - | ✅ |
+| Env Var Newlines | - | - | - | - | - | - | - | - | ✅ | ✅ |
+| HTTPS/WSS Mixed | - | - | - | - | - | - | - | - | ✅ | ✅ |
+| Vercel Monorepo | - | - | - | - | - | - | - | - | ✅ | - |
+| Prisma Build-Time | - | - | - | - | - | - | - | - | ✅ | - |
+| DB Schema Drift | - | - | - | - | - | - | - | - | - | ✅ |
+| Parameter Mismatch | - | - | - | - | - | - | - | - | ✅ | ✅ |
 
 **Legend**:
 - ✅ = Must implement
@@ -454,18 +681,25 @@ Track edge case implementation across components:
 3. **Oracle Manipulation** → Chainlink + TWAP + median of 3+
 
 ### P1 (Must Fix During Development):
-4. **Nonce Collisions** → Redis-based nonce manager + locking
-5. **Blockhash Expiration** → Fresh blockhash + retry logic
-6. **RPC Rate Limiting** → Bottleneck + multi-provider failover
-7. **Chain Reorgs** → Deep confirmations + reorg detection
+4. **PM2 Crash Loops** → Pre-deployment checks + environment validation
+5. **Vercel Monorepo Build** → Correct vercel.json + rootDirectory
+6. **Nonce Collisions** → Redis-based nonce manager + locking
+7. **Blockhash Expiration** → Fresh blockhash + retry logic
+8. **RPC Rate Limiting** → Bottleneck + multi-provider failover
+9. **Chain Reorgs** → Deep confirmations + reorg detection
 
 ### P2 (Should Fix Before Scale):
-8. **MEV Sandwich** → Flashbots + slippage protection
-9. **Gas Price Spikes** → Dynamic gas + ceiling enforcement
-10. **WebSocket Leaks** → Proper cleanup + lifecycle management
+10. **HTTPS/WSS Mixed Content** → Cloudflare Tunnel + HTTPS enforcement
+11. **Parameter Mismatches** → Shared TypeScript types + Zod validation
+12. **MEV Sandwich** → Flashbots + slippage protection
+13. **Gas Price Spikes** → Dynamic gas + ceiling enforcement
+14. **Env Var Newlines** → Validation scripts + pre-build checks
+15. **Database Schema Drift** → Prisma schema + migrations
+16. **WebSocket Leaks** → Proper cleanup + lifecycle management
 
 ### P3 (Nice to Have):
-11. **Cache Staleness** → Event-driven invalidation + TTL
+17. **Prisma Build-Time** → Lazy initialization + postinstall script
+18. **Cache Staleness** → Event-driven invalidation + TTL
 
 ---
 
