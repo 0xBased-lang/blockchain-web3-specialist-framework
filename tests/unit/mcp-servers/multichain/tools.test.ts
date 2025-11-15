@@ -135,14 +135,23 @@ describe('MultiChainToolManager', () => {
         expect(tool.inputSchema).toBeDefined();
         expect(tool.inputSchema).toHaveProperty('type', 'object');
         expect(tool.inputSchema).toHaveProperty('properties');
-        expect(tool.inputSchema).toHaveProperty('required');
+
+        // clear_wallet has empty properties and no required
+        if (tool.name !== 'multichain_clear_wallet') {
+          expect(tool.inputSchema).toHaveProperty('required');
+        }
       }
     });
 
     it('should include chain parameter in tool schemas', () => {
       const list = tools.listTools();
 
-      for (const tool of list) {
+      // Filter out wallet management tools as they have different schemas
+      const actionableTools = list.filter(
+        (t) => t.name !== 'multichain_initialize_wallet' && t.name !== 'multichain_clear_wallet'
+      );
+
+      for (const tool of actionableTools) {
         const schema = tool.inputSchema as any;
         expect(schema.properties.chain).toBeDefined();
         expect(schema.properties.chain.enum).toContain('auto');
