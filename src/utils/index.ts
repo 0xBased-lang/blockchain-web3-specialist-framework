@@ -60,3 +60,8 @@ export async function retry<T>(
 
   throw lastError || new Error('All retry attempts failed');
 }
+
+/**
+ * Export crypto utilities
+ */
+export * from './crypto.js';
