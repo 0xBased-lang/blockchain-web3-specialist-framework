@@ -230,6 +230,37 @@ export class MultiChainToolManager {
           required: ['to', 'amount', 'token', 'decimals'],
         },
       });
+
+      tools.push({
+        name: 'multichain_initialize_wallet',
+        description:
+          '⚠️ SECURITY: Initialize wallet/keypair with private key for specific chain. Key stored in memory only. Call multichain_clear_wallet when done.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            chain: {
+              type: 'string',
+              enum: ['ethereum', 'solana'],
+              description: 'Chain to initialize wallet for (cannot be auto)',
+            },
+            privateKey: {
+              type: 'string',
+              description: 'Private key (hex for Ethereum, base58 for Solana)',
+            },
+          },
+          required: ['chain', 'privateKey'],
+        },
+      });
+
+      tools.push({
+        name: 'multichain_clear_wallet',
+        description:
+          'Clear wallet/keypair from memory for all chains. Always call this after transactions.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      });
     }
 
     return tools;
@@ -531,7 +562,7 @@ export class MultiChainToolManager {
   async executeTool(
     name: string,
     params: unknown
-  ): Promise<UnifiedBalanceResponse | UnifiedTransactionResponse> {
+  ): Promise<UnifiedBalanceResponse | UnifiedTransactionResponse | { success: boolean; message: string }> {
     logger.info('Executing multi-chain tool', { name });
 
     switch (name) {
@@ -543,6 +574,26 @@ export class MultiChainToolManager {
 
       case 'multichain_transfer_token':
         return await this.transferToken(params);
+
+      case 'multichain_initialize_wallet': {
+        // Cast params to access properties
+        const toolParams = params as { chain?: string; privateKey?: string };
+        const chain = toolParams['chain'] as SupportedChain;
+        const privateKey = toolParams['privateKey'] ?? '';
+
+        this.initializeWallet(chain, privateKey);
+        return {
+          success: true,
+          message: `Wallet initialized for ${chain}`,
+        };
+      }
+
+      case 'multichain_clear_wallet':
+        this.clearWallet();
+        return {
+          success: true,
+          message: 'Wallet/keypair cleared from memory',
+        };
 
       default:
         throw new MultiChainError(
