@@ -5,6 +5,7 @@ export default defineConfig({
     'src/index.ts',
     'src/mcp-servers/ethereum/index.ts',
     'src/mcp-servers/solana/index.ts',
+    'src/mcp-servers/multichain/index.ts',
   ],
   format: ['esm'],
   dts: true,
