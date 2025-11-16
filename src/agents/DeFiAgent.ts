@@ -65,11 +65,11 @@ export interface DeFiProviders {
 export class DeFiAgent extends SpecializedAgentBase {
   private readonly providers: DeFiProviders;
   private readonly defiConfig: DeFiAgentConfig;
-  private readonly txBuilder: TransactionBuilder;
+  private readonly _txBuilder: TransactionBuilder;
   private readonly gasOptimizer: GasOptimizer;
-  private readonly simulator: TransactionSimulator;
+  private readonly _simulator: TransactionSimulator;
   private readonly priceOracle: PriceOracle;
-  private readonly walletManager: WalletManager;
+  private readonly _walletManager: WalletManager;
 
   constructor(
     config: AgentConfig,
@@ -90,21 +90,32 @@ export class DeFiAgent extends SpecializedAgentBase {
       throw new Error('At least one EVM provider (ethereum or polygon) is required');
     }
 
-    this.txBuilder = new TransactionBuilder({
-      ethereumProvider: providers.ethereum,
-      solanaConnection: providers.solana,
+    const txBuilderConfig: {
+      enableSimulation: boolean;
+      ethereumProvider?: JsonRpcProvider;
+      solanaConnection?: Connection;
+    } = {
       enableSimulation: true,
-    });
+    };
+
+    if (providers.ethereum) {
+      txBuilderConfig.ethereumProvider = providers.ethereum;
+    }
+    if (providers.solana) {
+      txBuilderConfig.solanaConnection = providers.solana;
+    }
+
+    this._txBuilder = new TransactionBuilder(txBuilderConfig);
 
     this.gasOptimizer = new GasOptimizer({
       provider: primaryProvider,
     });
 
-    this.simulator = new TransactionSimulator(primaryProvider);
+    this._simulator = new TransactionSimulator(primaryProvider);
 
     this.priceOracle = new PriceOracle({}, primaryProvider);
 
-    this.walletManager = new WalletManager();
+    this._walletManager = new WalletManager();
 
     logger.info('DeFiAgent initialized', {
       id: this.id,
@@ -159,7 +170,7 @@ export class DeFiAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTaskSafe<LiquidityResult>(
         'defi_add_liquidity',
-        params
+        params as unknown as Record<string, unknown>
       );
 
       if (result.success && result.data) {
@@ -189,7 +200,7 @@ export class DeFiAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTaskSafe<LiquidityResult>(
         'defi_remove_liquidity',
-        params
+        params as unknown as Record<string, unknown>
       );
 
       if (result.success && result.data) {
@@ -238,12 +249,13 @@ export class DeFiAgent extends SpecializedAgentBase {
 
     const check = async (): Promise<void> => {
       try {
-        const price = await this.priceOracle.queryPrice({
+        const priceResult = await this.priceOracle.queryPrice({
           tokenSymbol: params.token,
-          chain: params.chain as 'ethereum' | 'polygon' | 'solana',
         });
 
-        const currentPrice = price.price;
+        // Convert bigint to number for arithmetic operations
+        const currentPrice =
+          Number(priceResult.price.price) / Math.pow(10, priceResult.price.decimals);
 
         if (previousPrice > 0) {
           const change = ((currentPrice - previousPrice) / previousPrice) * 100;
@@ -320,7 +332,7 @@ export class DeFiAgent extends SpecializedAgentBase {
    * Plan a swap task
    */
   private planSwap(task: Task): TaskPlan {
-    const params = task.params as SwapParams;
+    const params = task.params as unknown as SwapParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -398,7 +410,7 @@ export class DeFiAgent extends SpecializedAgentBase {
    * Plan add liquidity task
    */
   private planAddLiquidity(task: Task): TaskPlan {
-    const params = task.params as LiquidityParams;
+    const params = task.params as unknown as LiquidityParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -413,7 +425,7 @@ export class DeFiAgent extends SpecializedAgentBase {
       this.createStep(
         `${stepPrefix}-calculate-amounts`,
         'calculate_liquidity_amounts',
-        params,
+        params as unknown as Record<string, unknown>,
         [`${stepPrefix}-validate-pool`],
         5000
       ),
@@ -421,7 +433,7 @@ export class DeFiAgent extends SpecializedAgentBase {
       this.createStep(
         `${stepPrefix}-build-tx`,
         'build_add_liquidity_transaction',
-        params,
+        params as unknown as Record<string, unknown>,
         [`${stepPrefix}-calculate-amounts`],
         10000
       ),
@@ -470,7 +482,7 @@ export class DeFiAgent extends SpecializedAgentBase {
    * Plan get quote task
    */
   private planGetQuote(task: Task): TaskPlan {
-    const params = task.params as SwapParams;
+    const params = task.params as unknown as SwapParams;
 
     const steps: Step[] = [
       this.createStep(
@@ -599,12 +611,12 @@ export class DeFiAgent extends SpecializedAgentBase {
     const { chain } = step.params as { chain: string };
 
     try {
-      const strategy = await this.gasOptimizer.analyzeGasMarket(chain as 'ethereum');
+      const gasParams = await this.gasOptimizer.getOptimizedGas();
 
       return this.createSuccessResult({
-        maxFeePerGas: strategy.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: strategy.maxPriorityFeePerGas.toString(),
-        strategy: strategy.strategy,
+        maxFeePerGas: gasParams.maxFeePerGas.toString(),
+        maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas.toString(),
+        strategy: gasParams.strategy,
       });
     } catch (error) {
       // Fallback to provider's fee data
@@ -632,7 +644,7 @@ export class DeFiAgent extends SpecializedAgentBase {
     step: Step,
     previousResults: Map<string, Result>
   ): Promise<Result> {
-    const params = step.params.params as SwapParams;
+    const params = step.params['params'] as SwapParams;
     const stepIds = Array.from(previousResults.keys());
 
     // Get quote from previous step
@@ -725,7 +737,7 @@ export class DeFiAgent extends SpecializedAgentBase {
     const buildTxStepId = stepIds.find((id) => id.includes('build-tx'));
 
     if (!buildTxStepId) {
-      return this.createFailureResult('No transaction data');
+      return this.createFailureResult('No transaction data') as Result<SwapResult>;
     }
 
     const txData = this.getStepDataSafe<{
@@ -735,7 +747,7 @@ export class DeFiAgent extends SpecializedAgentBase {
     }>(buildTxStepId, previousResults);
 
     if (!txData) {
-      return this.createFailureResult('Invalid transaction data');
+      return this.createFailureResult('Invalid transaction data') as Result<SwapResult>;
     }
 
     logger.info('Executing swap transaction', {
@@ -763,7 +775,7 @@ export class DeFiAgent extends SpecializedAgentBase {
       amountOut: swapResult.amountOut,
     });
 
-    return this.createSuccessResult(swapResult);
+    return this.createSuccessResult(swapResult) as Result<SwapResult>;
   }
 
   /**
@@ -784,7 +796,7 @@ export class DeFiAgent extends SpecializedAgentBase {
    * Step: Calculate liquidity amounts
    */
   private async stepCalculateLiquidityAmounts(step: Step): Promise<Result> {
-    const params = step.params as LiquidityParams;
+    const params = step.params as unknown as LiquidityParams;
 
     // Mock calculation
     return this.createSuccessResult({
@@ -798,7 +810,7 @@ export class DeFiAgent extends SpecializedAgentBase {
    * Step: Build add liquidity transaction
    */
   private async stepBuildAddLiquidityTransaction(step: Step): Promise<Result> {
-    const params = step.params as LiquidityParams;
+    const params = step.params as unknown as LiquidityParams;
 
     // Mock transaction
     const transaction = {
@@ -893,11 +905,19 @@ export class DeFiAgent extends SpecializedAgentBase {
       }
     }
 
-    return {
+    const validationResult: ValidationResult = {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
+
+    if (errors.length > 0) {
+      validationResult.errors = errors;
+    }
+
+    if (warnings.length > 0) {
+      validationResult.warnings = warnings;
+    }
+
+    return validationResult;
   }
 
   /**

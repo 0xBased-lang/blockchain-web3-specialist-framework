@@ -265,12 +265,17 @@ export abstract class SpecializedAgentBase extends BaseAgent {
    * @returns Success result
    */
   protected createSuccessResult<T>(data: T, metadata?: Record<string, unknown>): Result<T> {
-    return {
+    const result: Result<T> = {
       success: true,
       data,
-      metadata,
       timestamp: Date.now(),
     };
+
+    if (metadata) {
+      result.metadata = metadata;
+    }
+
+    return result;
   }
 
   /**
@@ -281,12 +286,17 @@ export abstract class SpecializedAgentBase extends BaseAgent {
    * @returns Failure result
    */
   protected createFailureResult(error: string, metadata?: Record<string, unknown>): Result {
-    return {
+    const result: Result = {
       success: false,
       error,
-      metadata,
       timestamp: Date.now(),
     };
+
+    if (metadata) {
+      result.metadata = metadata;
+    }
+
+    return result;
   }
 
   /**

@@ -54,10 +54,10 @@ export interface SecurityProviders {
  * Handles all security-related operations with comprehensive analysis.
  */
 export class SecurityAgent extends SpecializedAgentBase {
-  private readonly providers: SecurityProviders;
-  private readonly securityConfig: SecurityAgentConfig;
+  private readonly _providers: SecurityProviders;
+  private readonly _securityConfig: SecurityAgentConfig;
   private readonly contractAnalyzer: ContractAnalyzer;
-  private readonly simulator: TransactionSimulator;
+  private readonly _simulator: TransactionSimulator;
 
   constructor(
     config: AgentConfig,
@@ -66,8 +66,8 @@ export class SecurityAgent extends SpecializedAgentBase {
   ) {
     super(config);
 
-    this.providers = providers;
-    this.securityConfig = securityConfig;
+    this._providers = providers;
+    this._securityConfig = securityConfig;
 
     // Initialize subagents
     const primaryProvider = providers.ethereum || providers.polygon;
@@ -75,8 +75,8 @@ export class SecurityAgent extends SpecializedAgentBase {
       throw new Error('At least one provider is required for SecurityAgent');
     }
 
-    this.contractAnalyzer = new ContractAnalyzer({ provider: primaryProvider });
-    this.simulator = new TransactionSimulator(primaryProvider);
+    this.contractAnalyzer = new ContractAnalyzer({ ethereumProvider: primaryProvider });
+    this._simulator = new TransactionSimulator(primaryProvider);
 
     logger.info('SecurityAgent initialized', {
       id: this.id,
@@ -100,7 +100,7 @@ export class SecurityAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<AuditResult>(
         'security_audit_contract',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -121,7 +121,7 @@ export class SecurityAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<TransactionValidationResult>(
         'security_validate_tx',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -140,7 +140,7 @@ export class SecurityAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<{ malicious: boolean }>(
         'security_check_malicious',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result.malicious;
     } catch (error) {
@@ -159,7 +159,7 @@ export class SecurityAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<MEVAnalysisResult>(
         'security_analyze_mev',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -274,7 +274,7 @@ export class SecurityAgent extends SpecializedAgentBase {
    * Plan audit contract task
    */
   private planAuditContract(task: Task): TaskPlan {
-    const params = task.params as AuditParams;
+    const params = task.params as unknown as AuditParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -322,7 +322,7 @@ export class SecurityAgent extends SpecializedAgentBase {
    * Plan validate transaction task
    */
   private planValidateTransaction(task: Task): TaskPlan {
-    const params = task.params as TransactionValidationParams;
+    const params = task.params as unknown as TransactionValidationParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -339,7 +339,7 @@ export class SecurityAgent extends SpecializedAgentBase {
       this.createStep(
         `${stepPrefix}-simulate`,
         'simulate_and_assess_risk',
-        params,
+        params as unknown as Record<string, unknown>,
         [`${stepPrefix}-analyze-target`],
         15000
       ),
@@ -370,14 +370,14 @@ export class SecurityAgent extends SpecializedAgentBase {
    * Plan check malicious task
    */
   private planCheckMalicious(task: Task): TaskPlan {
-    const params = task.params as MaliciousCheckParams;
+    const params = task.params as unknown as MaliciousCheckParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
       this.createStep(
         `${stepPrefix}-check-patterns`,
         'check_malicious_patterns',
-        params,
+        params as unknown as Record<string, unknown>,
         [],
         10000
       ),
@@ -523,10 +523,10 @@ export class SecurityAgent extends SpecializedAgentBase {
     logger.info('Analyzing contract bytecode', { address, chain });
 
     try {
-      const analysis = await this.contractAnalyzer.analyzeContract(
+      const analysis = await this.contractAnalyzer.analyzeContract({
         address,
-        chain as 'ethereum' | 'solana'
-      );
+        chain: chain as 'ethereum' | 'solana',
+      });
 
       return this.createSuccessResult(analysis);
     } catch (error) {
@@ -630,9 +630,7 @@ export class SecurityAgent extends SpecializedAgentBase {
   /**
    * Step: Simulate and assess risk
    */
-  private async stepSimulateAndAssessRisk(step: Step): Promise<Result> {
-    const params = step.params as TransactionValidationParams;
-
+  private async stepSimulateAndAssessRisk(_step: Step): Promise<Result> {
     logger.info('Simulating transaction and assessing risk');
 
     // Mock simulation
@@ -669,7 +667,7 @@ export class SecurityAgent extends SpecializedAgentBase {
         }>(simulateStepId, previousResults)
       : undefined;
 
-    const validationResult: TransactionValidationResult = {
+    let validationResult: TransactionValidationResult = {
       safe: simResult?.safe ?? false,
       riskLevel: (simResult?.riskLevel as TransactionValidationResult['riskLevel']) || 'high',
       risks: simResult?.risks || [],
@@ -677,14 +675,18 @@ export class SecurityAgent extends SpecializedAgentBase {
       recommendation: simResult?.safe
         ? 'Transaction appears safe to execute'
         : 'Exercise caution before executing this transaction',
-      simulationResult: simResult
-        ? {
-            success: simResult.success,
-            gasUsed: simResult.gasUsed,
-            stateChanges: [],
-          }
-        : undefined,
     };
+
+    if (simResult) {
+      validationResult = {
+        ...validationResult,
+        simulationResult: {
+          success: simResult.success,
+          gasUsed: simResult.gasUsed,
+          stateChanges: [],
+        },
+      };
+    }
 
     return this.createSuccessResult(validationResult);
   }
@@ -707,7 +709,7 @@ export class SecurityAgent extends SpecializedAgentBase {
    * Step: Analyze MEV vulnerability
    */
   private async stepAnalyzeMEVVulnerability(step: Step): Promise<Result<MEVAnalysisResult>> {
-    const { transaction } = step.params as MEVAnalysisParams;
+    const { transaction } = step.params as unknown as MEVAnalysisParams;
 
     logger.info('Analyzing MEV vulnerability', { to: transaction.to });
 
@@ -729,7 +731,7 @@ export class SecurityAgent extends SpecializedAgentBase {
    * Step: Format security report
    */
   private async stepFormatSecurityReport(
-    step: Step,
+    _step: Step,
     previousResults: Map<string, Result>
   ): Promise<Result> {
     const stepIds = Array.from(previousResults.keys());
@@ -817,10 +819,18 @@ Generated: ${new Date(audit.timestamp).toISOString()}
       }
     }
 
-    return {
+    const validationResult: ValidationResult = {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
+
+    if (errors.length > 0) {
+      validationResult.errors = errors;
+    }
+
+    if (warnings.length > 0) {
+      validationResult.warnings = warnings;
+    }
+
+    return validationResult;
   }
 }

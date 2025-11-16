@@ -57,11 +57,11 @@ export interface NFTProviders {
  * Handles all NFT-related operations with proper validation and security checks.
  */
 export class NFTAgent extends SpecializedAgentBase {
-  private readonly providers: NFTProviders;
-  private readonly nftConfig: NFTAgentConfig;
-  private readonly txBuilder: TransactionBuilder;
-  private readonly contractAnalyzer: ContractAnalyzer;
-  private readonly walletManager: WalletManager;
+  private readonly _providers: NFTProviders;
+  private readonly _nftConfig: NFTAgentConfig;
+  private readonly _txBuilder: TransactionBuilder;
+  private readonly _contractAnalyzer: ContractAnalyzer;
+  private readonly _walletManager: WalletManager;
 
   constructor(
     config: AgentConfig,
@@ -70,23 +70,33 @@ export class NFTAgent extends SpecializedAgentBase {
   ) {
     super(config);
 
-    this.providers = providers;
-    this.nftConfig = nftConfig;
+    this._providers = providers;
+    this._nftConfig = nftConfig;
 
-    // Initialize subagents
-    this.txBuilder = new TransactionBuilder({
-      ethereumProvider: providers.ethereum,
-      solanaConnection: providers.solana,
-    });
+    // Initialize subagents - build config conditionally to handle optional providers
+    const txBuilderConfig: {
+      enableSimulation?: boolean;
+      ethereumProvider?: JsonRpcProvider;
+      solanaConnection?: Connection;
+    } = {};
+
+    if (providers.ethereum) {
+      txBuilderConfig.ethereumProvider = providers.ethereum;
+    }
+    if (providers.solana) {
+      txBuilderConfig.solanaConnection = providers.solana;
+    }
+
+    this._txBuilder = new TransactionBuilder(txBuilderConfig);
 
     const primaryProvider = providers.ethereum || providers.polygon;
     if (primaryProvider) {
-      this.contractAnalyzer = new ContractAnalyzer({ provider: primaryProvider });
+      this._contractAnalyzer = new ContractAnalyzer({ ethereumProvider: primaryProvider });
     } else {
-      this.contractAnalyzer = new ContractAnalyzer({});
+      this._contractAnalyzer = new ContractAnalyzer({});
     }
 
-    this.walletManager = new WalletManager();
+    this._walletManager = new WalletManager();
 
     logger.info('NFTAgent initialized', {
       id: this.id,
@@ -108,7 +118,10 @@ export class NFTAgent extends SpecializedAgentBase {
    */
   async mintERC721(params: MintERC721Params): Promise<MintResult> {
     try {
-      const result = await this.executeDomainTaskSafe<MintResult>('nft_mint_erc721', params);
+      const result = await this.executeDomainTaskSafe<MintResult>(
+        'nft_mint_erc721',
+        params as unknown as Record<string, unknown>
+      );
 
       if (result.success && result.data) {
         return result.data;
@@ -135,7 +148,10 @@ export class NFTAgent extends SpecializedAgentBase {
    */
   async mintERC1155(params: MintERC1155Params): Promise<MintResult> {
     try {
-      const result = await this.executeDomainTaskSafe<MintResult>('nft_mint_erc1155', params);
+      const result = await this.executeDomainTaskSafe<MintResult>(
+        'nft_mint_erc1155',
+        params as unknown as Record<string, unknown>
+      );
 
       if (result.success && result.data) {
         return result.data;
@@ -162,7 +178,10 @@ export class NFTAgent extends SpecializedAgentBase {
    */
   async transferNFT(params: NFTTransferParams): Promise<MintResult> {
     try {
-      const result = await this.executeDomainTaskSafe<MintResult>('nft_transfer', params);
+      const result = await this.executeDomainTaskSafe<MintResult>(
+        'nft_transfer',
+        params as unknown as Record<string, unknown>
+      );
 
       if (result.success && result.data) {
         return result.data;
@@ -189,7 +208,10 @@ export class NFTAgent extends SpecializedAgentBase {
    */
   async batchMint(params: BatchMintParams): Promise<MintResult[]> {
     try {
-      const result = await this.executeDomainTask<MintResult[]>('nft_batch_mint', params);
+      const result = await this.executeDomainTask<MintResult[]>(
+        'nft_batch_mint',
+        params as unknown as Record<string, unknown>
+      );
       return result;
     } catch (error) {
       logger.error('batchMint failed', { error, params });
@@ -275,7 +297,7 @@ export class NFTAgent extends SpecializedAgentBase {
    * Plan ERC721 mint task
    */
   private planMintERC721(task: Task): TaskPlan {
-    const params = task.params as MintERC721Params;
+    const params = task.params as unknown as MintERC721Params;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -349,7 +371,7 @@ export class NFTAgent extends SpecializedAgentBase {
    * Plan transfer task
    */
   private planTransfer(task: Task): TaskPlan {
-    const params = task.params as NFTTransferParams;
+    const params = task.params as unknown as NFTTransferParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -364,7 +386,7 @@ export class NFTAgent extends SpecializedAgentBase {
       this.createStep(
         `${stepPrefix}-build-tx`,
         'build_transfer_transaction',
-        params,
+        params as unknown as Record<string, unknown>,
         [`${stepPrefix}-validate-ownership`],
         10000
       ),
@@ -397,7 +419,7 @@ export class NFTAgent extends SpecializedAgentBase {
    * Plan batch mint task
    */
   private planBatchMint(task: Task): TaskPlan {
-    const params = task.params as BatchMintParams;
+    const params = task.params as unknown as BatchMintParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -645,7 +667,7 @@ export class NFTAgent extends SpecializedAgentBase {
     );
 
     if (!buildTxStepId) {
-      return this.createFailureResult('No transaction data');
+      return this.createFailureResult('No transaction data') as Result<MintResult>;
     }
 
     const txData = this.getStepDataSafe<{
@@ -654,7 +676,7 @@ export class NFTAgent extends SpecializedAgentBase {
     }>(buildTxStepId, previousResults);
 
     if (!txData) {
-      return this.createFailureResult('Invalid transaction data');
+      return this.createFailureResult('Invalid transaction data') as Result<MintResult>;
     }
 
     logger.info('Executing mint transaction');
@@ -692,7 +714,7 @@ export class NFTAgent extends SpecializedAgentBase {
    * Step: Build transfer transaction
    */
   private async stepBuildTransferTransaction(step: Step): Promise<Result> {
-    const params = step.params as NFTTransferParams;
+    const params = step.params as unknown as NFTTransferParams;
 
     logger.info('Building transfer transaction', params);
 
@@ -722,7 +744,7 @@ export class NFTAgent extends SpecializedAgentBase {
       txHash: mockTxHash,
     };
 
-    return this.createSuccessResult(result);
+    return this.createSuccessResult(result) as Result<MintResult>;
   }
 
   /**
@@ -804,12 +826,23 @@ export class NFTAgent extends SpecializedAgentBase {
     const mockTxHash =
       '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
-    const results: MintResult[] = Array.from({ length: count }, (_, i) => ({
-      success: true,
-      txHash: mockTxHash,
-      tokenId: (1000 + i).toString(),
-      metadataUri: txData?.uris[i],
-    }));
+    const results: MintResult[] = Array.from({ length: count }, (_, i) => {
+      const baseResult: MintResult = {
+        success: true,
+        txHash: mockTxHash,
+        tokenId: (1000 + i).toString(),
+      };
+
+      // Conditionally add metadataUri if available
+      if (txData?.uris[i]) {
+        return {
+          ...baseResult,
+          metadataUri: txData.uris[i],
+        };
+      }
+
+      return baseResult;
+    });
 
     return this.createSuccessResult(results);
   }
@@ -883,10 +916,18 @@ export class NFTAgent extends SpecializedAgentBase {
       }
     }
 
-    return {
+    const validationResult: ValidationResult = {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
+
+    if (errors.length > 0) {
+      validationResult.errors = errors;
+    }
+
+    if (warnings.length > 0) {
+      validationResult.warnings = warnings;
+    }
+
+    return validationResult;
   }
 }

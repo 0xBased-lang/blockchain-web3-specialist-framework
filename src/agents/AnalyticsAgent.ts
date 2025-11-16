@@ -57,9 +57,9 @@ export interface AnalyticsProviders {
  * Handles all analytics-related operations with multi-chain support.
  */
 export class AnalyticsAgent extends SpecializedAgentBase {
-  private readonly providers: AnalyticsProviders;
-  private readonly analyticsConfig: AnalyticsAgentConfig;
-  private readonly priceOracle: PriceOracle;
+  private readonly _providers: AnalyticsProviders;
+  private readonly _analyticsConfig: AnalyticsAgentConfig;
+  private readonly _priceOracle: PriceOracle;
 
   constructor(
     config: AgentConfig,
@@ -68,13 +68,13 @@ export class AnalyticsAgent extends SpecializedAgentBase {
   ) {
     super(config);
 
-    this.providers = providers;
-    this.analyticsConfig = analyticsConfig;
+    this._providers = providers;
+    this._analyticsConfig = analyticsConfig;
 
     // Initialize subagents
     const primaryProvider = providers.ethereum || providers.polygon;
 
-    this.priceOracle = new PriceOracle({}, primaryProvider);
+    this._priceOracle = new PriceOracle({}, primaryProvider);
 
     logger.info('AnalyticsAgent initialized', {
       id: this.id,
@@ -98,7 +98,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<PortfolioSummary>(
         'analytics_get_portfolio',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -117,7 +117,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<TransactionStats>(
         'analytics_analyze_tx',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -136,7 +136,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<GasStats>(
         'analytics_gas_analysis',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -155,7 +155,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<PriceHistory>(
         'analytics_price_history',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -176,7 +176,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
     try {
       const result = await this.executeDomainTask<PerformanceReport>(
         'analytics_performance',
-        params
+        params as unknown as Record<string, unknown>
       );
       return result;
     } catch (error) {
@@ -204,7 +204,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
           targetPercent: number;
           diff: number;
         }>;
-      }>('analytics_compare_allocation', { current, target });
+      }>('analytics_compare_allocation', { current, target } as unknown as Record<string, unknown>);
       return result;
     } catch (error) {
       logger.error('compareAllocation failed', { error });
@@ -251,7 +251,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
    * Plan get portfolio task
    */
   private planGetPortfolio(task: Task): TaskPlan {
-    const params = task.params as PortfolioParams;
+    const params = task.params as unknown as PortfolioParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
@@ -303,14 +303,14 @@ export class AnalyticsAgent extends SpecializedAgentBase {
    * Plan analyze transactions task
    */
   private planAnalyzeTransactions(task: Task): TaskPlan {
-    const params = task.params as TransactionAnalysisParams;
+    const params = task.params as unknown as TransactionAnalysisParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
       this.createStep(
         `${stepPrefix}-fetch-txs`,
         'fetch_transaction_history',
-        params,
+        params as unknown as Record<string, unknown>,
         [],
         20000
       ),
@@ -406,14 +406,14 @@ export class AnalyticsAgent extends SpecializedAgentBase {
    * Plan performance report task
    */
   private planPerformanceReport(task: Task): TaskPlan {
-    const params = task.params as PerformanceReportParams;
+    const params = task.params as unknown as PerformanceReportParams;
     const stepPrefix = task.id;
 
     const steps: Step[] = [
       this.createStep(
         `${stepPrefix}-fetch-historical-portfolio`,
         'fetch_historical_portfolio_data',
-        params,
+        params as unknown as Record<string, unknown>,
         [],
         20000
       ),
@@ -599,13 +599,16 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       : undefined;
 
     if (!balancesData || !pricesData) {
-      return this.createFailureResult('Missing balances or prices data');
+      return this.createFailureResult('Missing balances or prices data') as Result<PortfolioSummary>;
     }
 
     logger.info('Calculating portfolio summary');
 
-    // Calculate values
-    const assets: PortfolioAsset[] = balancesData.balances.map((b) => {
+    // Calculate values - use mutable type
+    type MutableAsset = {
+      -readonly [K in keyof PortfolioAsset]: PortfolioAsset[K];
+    };
+    const assets: MutableAsset[] = balancesData.balances.map((b) => {
       const priceUSD = pricesData.prices[b.symbol] || 0;
       const valueUSD = parseFloat(b.balance) * priceUSD;
 
@@ -641,20 +644,20 @@ export class AnalyticsAgent extends SpecializedAgentBase {
 
     const portfolio: PortfolioSummary = {
       totalValueUSD,
-      assets,
+      assets: assets as readonly PortfolioAsset[],
       chains,
     };
 
     logger.info('Portfolio summary calculated', { totalValueUSD });
 
-    return this.createSuccessResult(portfolio);
+    return this.createSuccessResult(portfolio) as Result<PortfolioSummary>;
   }
 
   /**
    * Step: Fetch transaction history
    */
   private async stepFetchTransactionHistory(step: Step): Promise<Result> {
-    const params = step.params as TransactionAnalysisParams;
+    const params = step.params as unknown as TransactionAnalysisParams;
 
     logger.info('Fetching transaction history', params);
 
@@ -689,7 +692,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       : undefined;
 
     if (!txData) {
-      return this.createFailureResult('No transaction data');
+      return this.createFailureResult('No transaction data') as Result<TransactionStats>;
     }
 
     logger.info('Analyzing transaction patterns', { count: txData.transactions.length });
@@ -707,14 +710,14 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       },
     };
 
-    return this.createSuccessResult(stats);
+    return this.createSuccessResult(stats) as Result<TransactionStats>;
   }
 
   /**
    * Step: Fetch gas usage data
    */
   private async stepFetchGasUsageData(step: Step): Promise<Result> {
-    const params = step.params as GasAnalysisParams;
+    const params = step.params as unknown as GasAnalysisParams;
 
     logger.info('Fetching gas usage data', params);
 
@@ -746,7 +749,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       : undefined;
 
     if (!gasData) {
-      return this.createFailureResult('No gas data');
+      return this.createFailureResult('No gas data') as Result<GasStats>;
     }
 
     logger.info('Calculating gas statistics');
@@ -758,14 +761,14 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       transactionCount: gasData.transactions,
     };
 
-    return this.createSuccessResult(stats);
+    return this.createSuccessResult(stats) as Result<GasStats>;
   }
 
   /**
    * Step: Fetch price history data
    */
   private async stepFetchPriceHistoryData(step: Step): Promise<Result<PriceHistory>> {
-    const params = step.params as PriceHistoryParams;
+    const params = step.params as unknown as PriceHistoryParams;
 
     logger.info('Fetching price history', params);
 
@@ -790,14 +793,14 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       },
     };
 
-    return this.createSuccessResult(priceHistory);
+    return this.createSuccessResult(priceHistory) as Result<PriceHistory>;
   }
 
   /**
    * Step: Fetch historical portfolio data
    */
   private async stepFetchHistoricalPortfolioData(step: Step): Promise<Result> {
-    const params = step.params as PerformanceReportParams;
+    const params = step.params as unknown as PerformanceReportParams;
 
     logger.info('Fetching historical portfolio data', params);
 
@@ -828,7 +831,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       : undefined;
 
     if (!histData) {
-      return this.createFailureResult('No historical data');
+      return this.createFailureResult('No historical data') as Result<PerformanceReport>;
     }
 
     logger.info('Calculating returns and performance');
@@ -846,7 +849,7 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       totalGasCostUSD: 50,
     };
 
-    return this.createSuccessResult(report);
+    return this.createSuccessResult(report) as Result<PerformanceReport>;
   }
 
   /**
@@ -933,10 +936,18 @@ export class AnalyticsAgent extends SpecializedAgentBase {
       }
     }
 
-    return {
+    const validationResult: ValidationResult = {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
+
+    if (errors.length > 0) {
+      validationResult.errors = errors;
+    }
+
+    if (warnings.length > 0) {
+      validationResult.warnings = warnings;
+    }
+
+    return validationResult;
   }
 }

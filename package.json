@@ -1,6 +1,6 @@
 {
   "name": "blockchain-web3-specialist-framework",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI-powered blockchain/Web3 framework with MCP servers, agents, and skills",
   "private": true,
   "type": "module",

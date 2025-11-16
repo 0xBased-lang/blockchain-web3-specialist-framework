@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-11-16
+
+### Added
+
+#### Specialized Agents (100%)
+- **DeFiAgent** (900+ lines) - Complete DeFi operations agent
+  - Token swaps across multiple DEXs (Uniswap, Sushiswap, PancakeSwap, Jupiter)
+  - Liquidity management (add/remove liquidity)
+  - Price monitoring with configurable thresholds
+  - DEX quote aggregation and optimization
+  - Integration: TransactionBuilder, GasOptimizer, TransactionSimulator, PriceOracle, WalletManager
+  - Dual interface: BaseAgent methods + domain-specific APIs
+
+- **NFTAgent** (870+ lines) - Complete NFT operations agent
+  - ERC721 NFT minting
+  - ERC1155 multi-token minting
+  - NFT transfers
+  - Batch minting for collections
+  - IPFS metadata upload integration
+  - Collection statistics tracking
+  - Integration: TransactionBuilder, ContractAnalyzer, WalletManager
+  - Dual interface: BaseAgent methods + domain-specific APIs
+
+- **SecurityAgent** (700+ lines) - Complete security analysis agent
+  - Smart contract auditing
+  - Transaction validation and pre-flight checks
+  - Malicious contract detection
+  - MEV (Maximal Extractable Value) risk analysis
+  - Continuous contract monitoring
+  - Security report generation
+  - Integration: ContractAnalyzer, TransactionSimulator
+  - Dual interface: BaseAgent methods + domain-specific APIs
+
+- **AnalyticsAgent** (950+ lines) - Complete analytics and reporting agent
+  - Portfolio tracking across multiple chains
+  - Transaction history analysis
+  - Gas usage statistics and optimization insights
+  - Token price history tracking
+  - Performance reporting with ROI calculations
+  - Portfolio allocation comparison
+  - Integration: PriceOracle
+  - Dual interface: BaseAgent methods + domain-specific APIs
+
+#### Foundation Classes
+- **SpecializedAgentBase** (280+ lines) - Abstract base class for specialized agents
+  - Common utilities and patterns
+  - Task creation and execution helpers
+  - Step management and dependency resolution
+  - Result validation utilities
+  - Reduces code duplication across agents
+
+- **Comprehensive Type Definitions** (300+ lines) - `src/types/specialized-agents.ts`
+  - DeFi types: SwapParams, LiquidityParams, DEXQuote, SwapResult, etc.
+  - NFT types: MintERC721Params, MintERC1155Params, BatchMintParams, MintResult, etc.
+  - Security types: AuditParams, TransactionValidationParams, MEVAnalysisParams, AuditResult, etc.
+  - Analytics types: PortfolioParams, TransactionAnalysisParams, GasAnalysisParams, etc.
+  - Provider configurations for multi-chain support
+  - Full TypeScript strict mode compatibility
+
+### Architecture Improvements
+
+- **Dual-Interface Pattern**: Each specialized agent exposes both:
+  1. BaseAgent interface (plan/execute/validate) for orchestration
+  2. Domain-specific methods (e.g., `executeSwap()`, `mintNFT()`) for direct use
+
+- **Task Decomposition**: High-level tasks broken into granular steps with dependencies
+  - Example DeFi swap: quote → optimize gas → build tx → simulate → execute
+  - Example NFT mint: upload metadata → validate contract → build tx → execute
+
+- **Clean Separation of Concerns**:
+  - Specialized agents: High-level orchestration
+  - Subagents: Low-level operations
+  - Domain methods: Developer-friendly APIs
+  - BaseAgent methods: Framework integration
+
+### Implementation Statistics
+
+- **Total New Code**: ~3,500 lines
+- **New Files**: 6 files created
+- **Agents Implemented**: 4 specialized agents (DeFi, NFT, Security, Analytics)
+- **Domain Methods**: 20+ domain-specific methods
+- **Task Types Supported**: 15+ task types
+- **Integration Points**: 8 subagents integrated
+
+### Fixed
+
+- All TypeScript compilation errors resolved (strict mode with exactOptionalPropertyTypes)
+- Type compatibility issues with readonly properties
+- Optional property handling in exactOptionalPropertyTypes mode
+- Result<T> generic type inference
+- ValidationResult conditional property assignment
+
 ## [0.1.0] - 2025-11-16
 
 ### Added
