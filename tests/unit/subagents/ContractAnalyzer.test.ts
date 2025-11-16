@@ -12,7 +12,6 @@ import {
   type ContractAnalysisRequest,
   VulnerabilityCategory,
   VulnerabilitySeverity,
-  DANGEROUS_OPCODES,
 } from '../../../src/types/contract.js';
 
 describe('ContractAnalyzer', () => {

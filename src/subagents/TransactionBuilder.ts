@@ -36,7 +36,9 @@ import {
 } from '../types/transaction.js';
 import { NonceManager } from './NonceManager.js';
 import { TransactionSimulator } from './TransactionSimulator.js';
+import { ContractAnalyzer } from './ContractAnalyzer.js';
 import { SimulationStatus, SimulationProvider, type SimulationResult, type RiskAssessment } from '../types/simulation.js';
+import { type ContractAnalysisResult, VulnerabilitySeverity, VulnerabilityCategory } from '../types/contract.js';
 import { logger } from '../utils/index.js';
 
 /**
@@ -49,6 +51,7 @@ export interface TransactionBuilderConfig {
   maxGasPrice?: bigint; // Maximum gas price in wei (safety limit)
   priorityFee?: bigint; // Default priority fee for EIP-1559
   enableSimulation?: boolean; // Enable automatic transaction simulation (recommended)
+  enableContractAnalysis?: boolean; // Enable automatic contract analysis (recommended for contract calls)
 }
 
 /**
@@ -58,11 +61,15 @@ export interface TransactionBuilderConfig {
  * nonce management, and safety checks.
  */
 export class TransactionBuilder {
-  private readonly config: Required<Omit<TransactionBuilderConfig, 'enableSimulation'>> & { enableSimulation?: boolean };
+  private readonly config: Required<Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>> & {
+    enableSimulation?: boolean;
+    enableContractAnalysis?: boolean;
+  };
   private readonly ethereumProvider?: JsonRpcProvider;
   private readonly solanaConnection?: Connection;
   private readonly nonceManager?: NonceManager;
   private readonly simulator?: TransactionSimulator;
+  private readonly contractAnalyzer?: ContractAnalyzer;
 
   constructor(config: TransactionBuilderConfig) {
     const baseConfig = {
@@ -79,11 +86,17 @@ export class TransactionBuilder {
       (baseConfig as any).solanaConnection = config.solanaConnection;
     }
 
-    this.config = baseConfig as Required<Omit<TransactionBuilderConfig, 'enableSimulation'>> & { enableSimulation?: boolean };
+    this.config = baseConfig as Required<Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>> & {
+      enableSimulation?: boolean;
+      enableContractAnalysis?: boolean;
+    };
 
-    // Conditionally add enableSimulation
+    // Conditionally add optional flags
     if (config.enableSimulation !== undefined) {
       this.config.enableSimulation = config.enableSimulation;
+    }
+    if (config.enableContractAnalysis !== undefined) {
+      this.config.enableContractAnalysis = config.enableContractAnalysis;
     }
 
     if (config.ethereumProvider !== undefined) {
@@ -94,6 +107,13 @@ export class TransactionBuilder {
       // Initialize Simulator if enabled
       if (this.config.enableSimulation) {
         (this as unknown as { simulator: TransactionSimulator }).simulator = new TransactionSimulator(config.ethereumProvider);
+      }
+
+      // Initialize ContractAnalyzer if enabled
+      if (this.config.enableContractAnalysis) {
+        (this as unknown as { contractAnalyzer: ContractAnalyzer }).contractAnalyzer = new ContractAnalyzer({
+          ethereumProvider: config.ethereumProvider,
+        });
       }
     }
 
@@ -106,6 +126,7 @@ export class TransactionBuilder {
       hasSolana: !!this.solanaConnection,
       gasSafetyMargin: this.config.gasSafetyMargin,
       simulationEnabled: this.config.enableSimulation ?? false,
+      contractAnalysisEnabled: this.config.enableContractAnalysis ?? false,
     });
   }
 
@@ -495,14 +516,19 @@ export class TransactionBuilder {
   }
 
   /**
-   * Build and simulate transaction (RECOMMENDED for safety)
+   * Build and simulate transaction with optional contract analysis (RECOMMENDED for safety)
    *
-   * Simulates the transaction first to detect errors, then builds it.
+   * Security Pipeline:
+   * 1. Contract Analysis (if enabled and target is a contract)
+   * 2. Transaction Simulation
+   * 3. Combined Risk Assessment
+   * 4. Build Transaction (only if safe)
+   *
    * This is the RECOMMENDED method for production use.
    *
    * @param params - Transaction parameters
-   * @returns Built transaction with simulation result and risk assessment
-   * @throws TransactionError if simulation detects critical issues
+   * @returns Built transaction with simulation, contract analysis, and combined risk assessment
+   * @throws TransactionError if critical security issues detected
    */
   async buildAndSimulate(
     params: TransactionParams
@@ -510,6 +536,7 @@ export class TransactionBuilder {
     transaction: BuiltTransaction;
     simulation: SimulationResult;
     risk: RiskAssessment;
+    contractAnalysis?: ContractAnalysisResult;
   }> {
     if (!this.simulator) {
       throw new TransactionError(
@@ -546,7 +573,81 @@ export class TransactionBuilder {
       };
     }
 
-    // Simulate transaction first
+    // STEP 1: Contract Analysis (if enabled and target is provided)
+    let contractAnalysis: ContractAnalysisResult | undefined;
+    if (this.contractAnalyzer !== undefined && params.to !== undefined) {
+      logger.info('Analyzing target contract before simulation', {
+        contract: params.to,
+      });
+
+      try {
+        contractAnalysis = await this.contractAnalyzer.analyzeContract({
+          address: params.to,
+          chain: params.chain,
+        });
+
+        logger.info('Contract analysis completed', {
+          contract: params.to,
+          riskLevel: contractAnalysis.riskLevel,
+          findings: contractAnalysis.summary.totalFindings,
+          criticalFindings: contractAnalysis.summary.criticalCount,
+        });
+
+        // CRITICAL CHECK: Block if contract is known malicious or has critical vulnerabilities
+        if (contractAnalysis.isKnownMalicious) {
+          const error = new TransactionError(
+            `CRITICAL: Target contract is known to be malicious. DO NOT INTERACT.`,
+            TransactionErrorCode.TRANSACTION_FAILED,
+            params.chain
+          );
+          logger.error('CRITICAL: Known malicious contract detected', {
+            contract: params.to,
+            recommendations: contractAnalysis.recommendations,
+          });
+          throw error;
+        }
+
+        if (contractAnalysis.riskLevel === 'critical') {
+          const error = new TransactionError(
+            `CRITICAL: Target contract has critical vulnerabilities. ${contractAnalysis.findings
+              .filter((f) => f.severity === VulnerabilitySeverity.CRITICAL)
+              .map((f) => f.title)
+              .join(', ')}`,
+            TransactionErrorCode.TRANSACTION_FAILED,
+            params.chain
+          );
+          logger.error('CRITICAL: Contract analysis detected critical vulnerabilities', {
+            contract: params.to,
+            criticalFindings: contractAnalysis.summary.criticalCount,
+            findings: contractAnalysis.findings.filter((f) => f.severity === VulnerabilitySeverity.CRITICAL),
+          });
+          throw error;
+        }
+
+        // Log warnings for high-risk contracts
+        if (contractAnalysis.riskLevel === 'high') {
+          logger.warn('HIGH RISK: Target contract has significant security concerns', {
+            contract: params.to,
+            riskLevel: contractAnalysis.riskLevel,
+            highFindings: contractAnalysis.summary.highCount,
+            recommendations: contractAnalysis.recommendations,
+          });
+        }
+      } catch (error) {
+        // If it's already a TransactionError (critical), re-throw
+        if (error instanceof TransactionError) {
+          throw error;
+        }
+        // Otherwise, log but continue (contract might be unverified, etc.)
+        logger.warn('Contract analysis failed, continuing with simulation only', {
+          contract: params.to,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        contractAnalysis = undefined;
+      }
+    }
+
+    // STEP 2: Transaction Simulation
     logger.info('Simulating transaction before building', {
       from: params.from,
       to: params.to,
@@ -600,28 +701,115 @@ export class TransactionBuilder {
       throw error;
     }
 
+    // STEP 3: Combined Risk Assessment (if contract analysis was performed)
+    let combinedRisk = risk;
+    if (contractAnalysis !== undefined) {
+      // Merge warnings from both analyses
+      const combinedWarnings = [
+        ...risk.warnings,
+        ...contractAnalysis.recommendations.filter(r => r.includes('⚠️') || r.includes('WARNING')),
+      ];
+
+      // Merge issues from both (map vulnerability category to risk category)
+      const mapVulnerabilityCategory = (cat: VulnerabilityCategory): RiskAssessment['issues'][number]['category'] => {
+        switch (cat) {
+          case VulnerabilityCategory.REENTRANCY:
+            return 'reentrancy';
+          case VulnerabilityCategory.ACCESS_CONTROL:
+          case VulnerabilityCategory.SELFDESTRUCT_UNPROTECTED:
+            return 'access-control';
+          case VulnerabilityCategory.GAS_LIMIT_DOS:
+            return 'gas';
+          case VulnerabilityCategory.INTEGER_OVERFLOW:
+            return 'overflow';
+          case VulnerabilityCategory.ORACLE_MANIPULATION:
+          case VulnerabilityCategory.MEV_VULNERABILITY:
+            return 'price-manipulation';
+          default:
+            return 'other';
+        }
+      };
+
+      const combinedIssues = [
+        ...risk.issues,
+        ...contractAnalysis.findings.map(f => ({
+          severity: f.severity === VulnerabilitySeverity.CRITICAL ? 'critical' as const :
+                   f.severity === VulnerabilitySeverity.HIGH ? 'error' as const :
+                   f.severity === VulnerabilitySeverity.MEDIUM ? 'warning' as const : 'info' as const,
+          category: mapVulnerabilityCategory(f.category),
+          description: `[Contract] ${f.title}: ${f.description}`,
+          mitigation: f.recommendation,
+        })),
+      ];
+
+      // Determine combined risk level (take the higher of the two)
+      const riskLevels = ['low', 'medium', 'high', 'critical'];
+      const simulationRiskIndex = riskLevels.indexOf(risk.level);
+      const contractRiskIndex = riskLevels.indexOf(contractAnalysis.riskLevel);
+      const combinedRiskLevel = riskLevels[Math.max(simulationRiskIndex, contractRiskIndex)] as RiskAssessment['level'];
+
+      // Merge recommendations
+      const combinedRecommendations = [
+        ...risk.recommendations,
+        ...contractAnalysis.recommendations.filter(r => !r.includes('✅')), // Exclude "safe" messages
+      ];
+
+      combinedRisk = {
+        level: combinedRiskLevel,
+        warnings: combinedWarnings,
+        issues: combinedIssues,
+        recommendations: combinedRecommendations,
+      };
+
+      logger.info('Combined security assessment', {
+        contractRisk: contractAnalysis.riskLevel,
+        simulationRisk: risk.level,
+        combinedRisk: combinedRiskLevel,
+        totalFindings: contractAnalysis.summary.totalFindings,
+        simulationIssues: risk.issues.length,
+      });
+    }
+
     // Log warnings for high/medium risk
-    if (risk.level === 'high' || risk.level === 'medium') {
-      logger.warn('Transaction simulation detected potential issues', {
+    if (combinedRisk.level === 'high' || combinedRisk.level === 'medium') {
+      logger.warn('Security assessment detected potential issues', {
         from: params.from,
         to: params.to,
-        riskLevel: risk.level,
-        warnings: risk.warnings,
-        issues: risk.issues,
+        riskLevel: combinedRisk.level,
+        warnings: combinedRisk.warnings,
+        issues: combinedRisk.issues.length,
       });
     }
 
     // Build transaction
     const transaction = await this.buildTransaction(params);
 
-    logger.info('Transaction built and simulated successfully', {
+    logger.info('Transaction built with full security validation', {
       from: params.from,
       to: params.to,
-      riskLevel: risk.level,
+      riskLevel: combinedRisk.level,
       gasUsed: simulation.gasUsed.toString(),
+      contractAnalyzed: contractAnalysis !== undefined,
     });
 
-    return { transaction, simulation, risk };
+    // Build result with conditional property assignment (exactOptionalPropertyTypes)
+    const result: {
+      transaction: BuiltTransaction;
+      simulation: SimulationResult;
+      risk: RiskAssessment;
+      contractAnalysis?: ContractAnalysisResult;
+    } = {
+      transaction,
+      simulation,
+      risk: combinedRisk,
+    };
+
+    // Conditionally add contractAnalysis
+    if (contractAnalysis !== undefined) {
+      (result as { contractAnalysis: ContractAnalysisResult }).contractAnalysis = contractAnalysis;
+    }
+
+    return result;
   }
 
   /**
