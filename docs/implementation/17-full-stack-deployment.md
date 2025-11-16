@@ -80,7 +80,7 @@ my-project/
 │   └── app/
 └── backend/
 ```
-→ **Needs `vercel.json` configuration**
+→ **Needs `vercel.json` configuration** _(example configuration file to be created)_
 
 **Monorepo with Packages** (kektechV0.69 pattern):
 ```
@@ -91,15 +91,15 @@ my-project/
 │       ├── package.json  # Frontend package.json
 │       └── app/
 ```
-→ **Needs `vercel.json` configuration**
+→ **Needs `vercel.json` configuration** _(example configuration file to be created)_
 
 #### 1.1.2 Create vercel.json (Monorepo Only)
 
 **For Frontend Subdirectory Pattern** (zmartV0.69):
 
-Create `vercel.json` in **repository root**:
+Create `vercel.json` _(example configuration)_ in **repository root**:
 
-```json
+```jsonc
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
@@ -113,7 +113,7 @@ Create `vercel.json` in **repository root**:
 
 **For Packages Pattern** (kektechV0.69):
 
-```json
+```jsonc
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
@@ -153,7 +153,7 @@ node-linker=hoisted
 
 **For pnpm Workspaces**:
 
-Create/verify `pnpm-workspace.yaml` in repository root:
+Create/verify `pnpm-workspace.yaml` _(workspace configuration)_ in repository root:
 
 ```yaml
 packages:
@@ -296,7 +296,7 @@ ANALYZE=false                                  # Set to 'true' to analyze bundle
 
 **Prevention**: Validate environment variables on startup
 
-Create `src/config/env.ts`:
+Create `src/config/env.ts` _(environment configuration file to be created)_:
 
 ```typescript
 import { z } from 'zod';
@@ -1300,7 +1300,7 @@ export TUNNEL_ID=abc123-def456-ghi789
 
 #### 2.4.4 Configure Tunnel
 
-Create `~/.cloudflared/config.yml`:
+Create user config file `~/.cloudflared/config.yml` _(Cloudflare Tunnel configuration)_:
 
 ```yaml
 tunnel: abc123-def456-ghi789
@@ -1844,7 +1844,7 @@ This section documents actual production issues from zmartV0.69 and kektechV0.69
 - **Prevention**:
   - Add `pre_deploy_local: 'npm run build'` to `ecosystem.config.js`
   - Add environment validation script
-  - Check `test -f dist/index.js` before `pm2 start`
+  - Verify build artifacts exist before `pm2 start` (command: `test -f dist/index.js`)
 
 ---
 
@@ -1898,7 +1898,7 @@ This section documents actual production issues from zmartV0.69 and kektechV0.69
 **Next Guides**:
 - **Guide 18**: Backend/Frontend Integration Patterns
 - **Guide 19**: Documentation Standards & Validation
-- **Guide 20**: TypeScript Strict Migration
+- **Guide 20** (planned): TypeScript Strict Migration
 
 **Final Checklist**:
 - [ ] Vercel deployment works

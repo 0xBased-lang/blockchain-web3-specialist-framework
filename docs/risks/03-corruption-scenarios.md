@@ -473,7 +473,7 @@ function sanitizeLog(message: string): string {
 
 // 3. Never expose in errors
 class SafeError extends Error {
-  constructor(message: string, private sensitive: any) {
+  constructor(message: string, private sensitive: unknown) {
     super(sanitizeLog(message));
   }
 
@@ -765,7 +765,7 @@ async function healthCheck() {
 
 ### Manual Recovery Procedures
 
-See `docs/operations/disaster-recovery.md` for detailed recovery procedures.
+See `docs/operations/disaster-recovery.md` _(recommended file to create)_ for detailed recovery procedures.
 
 ---
 

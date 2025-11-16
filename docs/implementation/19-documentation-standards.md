@@ -179,7 +179,7 @@ pnpm validate:docs:fix
 ```
 ❌ ERROR: docs/implementation/16-edge-case-checklist.md:89
    Type: cross-reference
-   Message: Referenced Guide 25 does not exist
+   Message: Referenced Guide 25 does not exist (example - Guide 25 not planned)
    Suggestion: Check if guide number is correct or if guide has been created
 ```
 
@@ -221,9 +221,9 @@ pnpm validate:docs:fix
 
 **✅ CORRECT:**
 ```markdown
-See `src/agents/orchestrator.ts` for implementation
+See orchestrator agent implementation (example: `src/agents/orchestrator.ts`)
 See Guide 17, Section 2.4 for deployment steps
-Configuration: `ecosystem.config.js`
+Configuration: `ecosystem.config.js` _(PM2 config file)_
 ```
 
 **❌ WRONG:**
@@ -443,12 +443,12 @@ grep -r "src/agents/orchestrator.ts" docs/
 
 **Fix:**
 ```typescript
-// BEFORE (broken)
+// BEFORE (broken - intentional example of error)
 export function example() {
   if (condition) {
     doSomething();
   }
-// Missing closing brace
+// Missing closing brace - DO NOT COPY THIS
 
 // AFTER (fixed)
 export function example() {
@@ -462,7 +462,7 @@ export function example() {
 
 **Symptom:**
 ```
-❌ ERROR: Referenced Guide 25 does not exist
+❌ ERROR: Referenced Guide 25 does not exist (example validation error)
 ```
 
 **Causes:**

@@ -432,7 +432,7 @@ tree -L 2 src/  # Verify structure
 
 ### Step 7.1: Create Config System
 
-Create `src/config/index.ts`:
+Create `src/config/index.ts` _(configuration file to be created)_:
 
 ```typescript
 import { config as loadEnv } from 'dotenv';
@@ -529,7 +529,7 @@ pnpm hardhat init
 
 ### Step 8.2: Configure Hardhat
 
-Edit `hardhat.config.ts`:
+Edit `hardhat.config.ts` _(Hardhat configuration to be created)_:
 
 ```typescript
 import { HardhatUserConfig } from 'hardhat/config';

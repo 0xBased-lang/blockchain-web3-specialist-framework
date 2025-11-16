@@ -103,17 +103,17 @@ export type SendTransactionParams = z.infer<typeof SendTransactionParamsSchema>;
 
 export const CallContractParamsSchema = z.object({
   address: AddressSchema,
-  abi: z.array(z.any()), // ABI fragment
+  abi: z.array(z.record(z.unknown())), // ABI fragment
   method: z.string(),
-  args: z.array(z.any()).optional(),
+  args: z.array(z.unknown()).optional(),
 });
 
 export type CallContractParams = z.infer<typeof CallContractParamsSchema>;
 
 export const DeployContractParamsSchema = z.object({
   bytecode: HexSchema,
-  abi: z.array(z.any()),
-  constructorArgs: z.array(z.any()).optional(),
+  abi: z.array(z.record(z.unknown())),
+  constructorArgs: z.array(z.unknown()).optional(),
   gasLimit: BigIntSchema.optional(),
 });
 
@@ -151,7 +151,7 @@ export interface TransactionResponse {
 }
 
 export interface ContractCallResponse {
-  result: any;
+  result: unknown;
   blockNumber: number;
 }
 

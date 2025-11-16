@@ -1251,7 +1251,7 @@ class ResilientMCPClient {
     throw new Error('Failed to connect after maximum attempts');
   }
 
-  async callTool(name: string, args: any): Promise<any> {
+  async callTool(name: string, args: unknown): Promise<unknown> {
     try {
       return await this.client.callTool({ name, arguments: args });
     } catch (error) {
@@ -1266,10 +1266,12 @@ class ResilientMCPClient {
     }
   }
 
-  private isConnectionError(error: any): boolean {
-    return error.message.includes('ECONNREFUSED') ||
-           error.message.includes('ENOTFOUND') ||
-           error.message.includes('ETIMEDOUT');
+  private isConnectionError(error: unknown): boolean {
+    return error instanceof Error && (
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('ETIMEDOUT')
+    );
   }
 }
 ```
@@ -1283,7 +1285,7 @@ class ResilientMCPClient {
 ```typescript
 // Correct tool implementation
 class MCPTool {
-  async executeTool(name: string, args: any): Promise<ToolResult> {
+  async executeTool(name: string, args: unknown): Promise<ToolResult> {
     try {
       // Validate inputs
       const validated = this.validateArgs(name, args);
@@ -1821,10 +1823,12 @@ Deployment failed
   "buildCommand": "pnpm build",
   "outputDirectory": ".next",
   "installCommand": "cd ../.. && pnpm install",
-  "rootDirectory": "frontend",  // ← MOST CRITICAL
+  "rootDirectory": "frontend",
   "framework": "nextjs"
 }
 ```
+
+**NOTE**: `rootDirectory` is the MOST CRITICAL setting for monorepos.
 
 **For packages/ structure**:
 ```json

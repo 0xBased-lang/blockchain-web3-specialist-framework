@@ -36,7 +36,7 @@ export abstract class BaseAgent {
   protected description: string;
   protected capabilities: string[];
   protected mcpClient: MCPClient;
-  protected subagents: Map<string, any>;
+  protected subagents: Map<string, Subagent>;
 
   constructor(config: AgentConfig) {
     this.id = config.id;
@@ -68,7 +68,7 @@ export abstract class BaseAgent {
     return await this.messageQueue.send(targetAgent, message);
   }
 
-  registerSubagent(name: string, subagent: any) {
+  registerSubagent(name: string, subagent: Subagent) {
     this.subagents.set(name, subagent);
     logger.info(`Registered subagent: ${name}`);
   }
@@ -97,7 +97,7 @@ Create `src/agents/planning.ts`:
 export interface Task {
   id: string;
   type: string;
-  params: any;
+  params: Record<string, unknown>;
   priority: number;
   deadline?: Date;
 }
@@ -115,7 +115,7 @@ export interface Step {
   id: string;
   action: string;
   agent: string;
-  params: any;
+  params: Record<string, unknown>;
   dependsOn: string[];
   timeout: number;
 }
@@ -202,7 +202,7 @@ export interface Message {
   from: string;
   to: string;
   type: 'request' | 'response' | 'broadcast';
-  payload: any;
+  payload: unknown;
   timestamp: number;
   replyTo?: string;
 }

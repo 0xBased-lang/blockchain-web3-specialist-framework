@@ -40,7 +40,7 @@
 | Gap | Real Cost | Action |
 |-----|-----------|--------|
 | Prisma Build-Time Issues | Multiple commits | Add to Guide 18 |
-| TypeScript Strict Migration | 70+ errors | Create Guide 20 |
+| TypeScript Strict Migration | 70+ errors | Guide 20 (planned) |
 | Next.js Version Compatibility | Multiple commits | Version-specific notes |
 | WebSocket Lifecycle | Memory leaks | Expand Guide 04 |
 | Health Check Endpoints | No standard | Add to Guide 17 |
@@ -500,7 +500,7 @@ Based on production issues from zmartV0.69 and kektechV0.69:
 
 8. **TypeScript Strict**: Migrate incrementally, not all at once
    - 70+ errors if you flip the switch suddenly
-   - See: Guide 20 (when created)
+   - See: Guide 20 (planned, not yet created)
 
 ### Runtime
 9. **WebSocket Lifecycle**: Proper cleanup prevents memory leaks

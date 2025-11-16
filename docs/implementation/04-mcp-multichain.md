@@ -63,8 +63,10 @@ Create `src/mcp-servers/multi-chain/registry.ts`:
 import { EthereumMCPServer } from '../ethereum/index.js';
 import { SolanaMCPServer } from '../solana/index.js';
 
+type ChainServer = EthereumMCPServer | SolanaMCPServer;
+
 export class ChainRegistry {
-  private chains: Map<ChainId, any>;
+  private chains: Map<ChainId, ChainServer>;
 
   constructor() {
     this.chains = new Map();
@@ -77,7 +79,7 @@ export class ChainRegistry {
     // Add more chains as needed
   }
 
-  getChain(chainId: ChainId): any {
+  getChain(chainId: ChainId): ChainServer {
     const chain = this.chains.get(chainId);
     if (!chain) {
       throw new Error(`Chain ${chainId} not registered`);

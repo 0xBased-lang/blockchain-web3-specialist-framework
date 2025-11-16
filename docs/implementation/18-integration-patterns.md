@@ -1798,7 +1798,7 @@ npx prisma migrate status
 
 **Next Guides**:
 - **Guide 19**: Documentation Standards & Validation
-- **Guide 20**: TypeScript Strict Migration
+- **Guide 20** (planned): TypeScript Strict Migration
 
 ---
 

@@ -722,7 +722,7 @@ Vercel: API_URL=??? ❌ Forgot to set in Vercel dashboard
 **Solutions Implemented**:
 
 **zmartV0.69**:
-- Created `CREDENTIALS_ROTATION_GUIDE.md`
+- Created `CREDENTIALS_ROTATION_GUIDE.md` (recommended operational guide)
 - Added `.env.example` with all variables documented
 - Validation script that runs on startup
 - Pre-commit hook to check for trailing whitespace
@@ -1061,17 +1061,17 @@ const ws = new WebSocket('wss://ws.zmart.io');  ✅
    - Clear versioning (Day 1, Day 2, Week 1, Week 2)
 
 4. **Operational Docs**
-   - `DAILY_WORKFLOW_CHECKLIST.md`
-   - `RECOVERY_PROCEDURES.md`
-   - `CREDENTIALS_ROTATION_GUIDE.md`
-   - `PRE_PRODUCTION_CHECKLIST.md`
+   - `DAILY_WORKFLOW_CHECKLIST.md` (recommended operational doc)
+   - `RECOVERY_PROCEDURES.md` (recommended operational doc)
+   - `CREDENTIALS_ROTATION_GUIDE.md` (recommended operational doc)
+   - `PRE_PRODUCTION_CHECKLIST.md` (recommended operational doc)
 
 5. **No Documentation Drift**
    - Docs updated alongside code
    - Commit messages reference documentation
    - Claude branch specifically for "documentation audit"
 
-**Example** (from `INCIDENT_LIBRARY.md`):
+**Example** (from incident library - create as `INCIDENT_LIBRARY.md`):
 ```markdown
 ### INCIDENT-001: Vote Aggregator & Market Monitor Crash Loop
 
@@ -1177,7 +1177,7 @@ This section maps findings to our existing framework (guides 00-16) and identifi
 | Private key security | Guide 07 (Wallet Manager) | ✅ 100% coverage required |
 | Input validation | Guides 02-16 | ✅ Zod schemas throughout |
 | Testing strategy | Guide 13 (Testing) | ✅ 80%+ coverage |
-| Security audits | Guide 14 (Security) | ✅ Slither integration |
+| Security audits | Guide 13-15 (Security section) | ✅ Slither integration |
 
 ### Gaps in Our Framework ❌
 
@@ -1331,7 +1331,7 @@ Address documentation drift:
 
 ### Priority 3: MEDIUM - Nice to Have 📋
 
-**New Guide 20: TypeScript Migration**
+**Guide 20 (planned): TypeScript Migration**
 
 For projects upgrading to strict mode:
 1. Enabling strict mode incrementally
@@ -1341,7 +1341,7 @@ For projects upgrading to strict mode:
 
 ---
 
-**New Guide 21: Monitoring & Observability**
+**Guide 21 (planned): Monitoring & Observability**
 
 1. PM2 monitoring setup
 2. Health check patterns

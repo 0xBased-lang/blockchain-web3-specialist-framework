@@ -363,7 +363,6 @@ describe('Performance Benchmarks', () => {
 - `src/subagents/WalletManager.ts`
 - `src/subagents/TransactionBuilder.ts`
 - `src/utils/crypto.ts`
-- `src/utils/validation.ts`
 
 ### Allowed Lower Coverage
 

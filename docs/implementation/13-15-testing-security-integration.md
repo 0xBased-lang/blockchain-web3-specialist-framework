@@ -6,7 +6,7 @@
 
 ### Phase 1: Test Utilities (2 hours)
 
-Create `tests/utils/mocks.ts`:
+Create `tests/utils/mocks.ts` _(test file to be created)_:
 
 ```typescript
 import { vi } from 'vitest';
@@ -48,7 +48,7 @@ export function createMockAgent() {
 }
 ```
 
-Create `tests/utils/fixtures.ts`:
+Create `tests/utils/fixtures.ts` _(test file to be created)_:
 
 ```typescript
 export const TEST_ACCOUNTS = {
@@ -76,7 +76,7 @@ export const TEST_CONTRACTS = {
 
 ### Phase 2: Integration Test Setup (3 hours)
 
-Create `tests/integration/setup.ts`:
+Create `tests/integration/setup.ts` _(test file to be created)_:
 
 ```typescript
 import { execSync } from 'child_process';
@@ -135,7 +135,7 @@ export class TestEnvironment {
 
 ### Phase 3: E2E Tests (3-4 hours)
 
-Create `tests/e2e/swap-workflow.test.ts`:
+Create `tests/e2e/swap-workflow.test.ts` _(E2E test file to be created)_:
 
 ```typescript
 describe('E2E: Complete Swap Workflow', () => {
@@ -268,7 +268,7 @@ export function sanitizeLog(message: string): string {
 
 // 4. Never expose in errors
 class SafeError extends Error {
-  constructor(message: string, public code: string, private sensitive?: any) {
+  constructor(message: string, public code: string, private sensitive?: unknown) {
     super(sanitizeLog(message));
   }
 

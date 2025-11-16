@@ -66,7 +66,7 @@ docs/
 ### For Understanding the Project
 1. Start with `planning/01-project-overview.md`
 2. Review `architecture/01-system-architecture.md`
-3. Check `planning/02-requirements.md` for detailed specs
+3. Check `planning/03-dependency-matrix.md` for technology stack
 
 ### For Implementation
 1. Read `implementation/00-prerequisites.md` first
@@ -80,8 +80,8 @@ docs/
 
 ### For Risk Assessment
 1. Review all files in `risks/` directory
-2. Pay special attention to `risks/02-security-risks.md`
-3. Implement mitigations from `risks/05-mitigation-strategies.md`
+2. Pay special attention to `risks/03-corruption-scenarios.md`
+3. Review edge cases in `risks/04-comprehensive-edge-cases.md`
 
 ### For Testing
 1. Read `testing/01-testing-strategy.md` for overall approach

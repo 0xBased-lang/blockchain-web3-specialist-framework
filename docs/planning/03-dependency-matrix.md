@@ -180,7 +180,7 @@ yarn.lock         ❌ (not used)
 ### Critical Packages (Review Monthly)
 
 - `ethers` - Security patches
-- `@solana/web3.js` - Protocol updates
+- @solana/web3.js (npm package) - Protocol updates
 - `@modelcontextprotocol/sdk` - Breaking changes
 - Security tools (slither, mythril)
 
@@ -274,7 +274,7 @@ pnpm install --optional
 
 ### Attribution Required
 
-See `LICENSES.md` for complete attribution list (auto-generated)
+See `LICENSES.md` (to be generated) for complete attribution list
 
 ## Performance Considerations
 

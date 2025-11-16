@@ -47,7 +47,7 @@ Copy the section below for each new incident:
 
 **Code Examples** (if applicable):
 ```[language]
-// File: path/to/file.ts:line-number
+// File: [path/to/your/file.ts:line-number]
 [Relevant code snippet showing the issue]
 ```
 
@@ -128,7 +128,7 @@ Example:
 
 **Fix #1: [Description of first fix]**
 
-**File**: `path/to/file.ts`
+**File**: `[your-file-path-here].ts` _(example placeholder - replace with actual file path)_
 
 **Changes**:
 ```[language]
@@ -704,7 +704,7 @@ cp docs/templates/INCIDENT_LIBRARY_TEMPLATE.md docs/incidents/incident-library.m
 
 1. Copy the incident template section
 2. Fill in all fields (while details are fresh!)
-3. Add to `docs/incidents/incident-library.md`
+3. Add to your project's incident library (e.g., `docs/incidents/INCIDENT-XXX.md` where XXX is the incident number)
 4. Number incidents sequentially: INCIDENT-001, INCIDENT-002, etc.
 
 ### Step 3: Update Prevention Strategies
@@ -758,7 +758,7 @@ fi
 - [ ] Code follows project conventions
 - [ ] Tests added/updated
 - [ ] Documentation updated
-- [ ] **If this fixes a production incident**: Documented in `incident-library.md`
+- [ ] **If this fixes a production incident**: Documented in incident library
 ```
 
 ---

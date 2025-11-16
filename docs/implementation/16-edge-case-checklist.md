@@ -140,7 +140,7 @@ Before starting any implementation:
 - [ ] Test transaction edge cases (insufficient balance, invalid recipient)
 - [ ] Implement transaction replacement logic
 
-**Gas Optimizer** (Guide 09):
+**Gas Optimizer** (Guide 08-10, Section on Gas Optimizer):
 - [ ] Implement gas estimation with 20% buffer
 - [ ] Add EIP-1559 support (maxFeePerGas, maxPriorityFeePerGas)
 - [ ] Create gas price monitoring
@@ -148,7 +148,7 @@ Before starting any implementation:
 - [ ] Test gas estimation accuracy
 - [ ] Implement legacy gas price fallback
 
-**Contract Analyzer** (Guide 10):
+**Contract Analyzer** (Guide 08-10, Section on Contract Analyzer):
 - [ ] Integrate Slither for static analysis
 - [ ] Implement custom vulnerability checks:
   - [ ] Reentrancy detection
@@ -440,7 +440,7 @@ Before deploying to production:
 **Build Verification**:
 - [ ] TypeScript compilation succeeds with 0 errors
 - [ ] All tests pass (`pnpm test`)
-- [ ] Compiled artifacts exist (`test -f dist/index.js`)
+- [ ] Compiled artifacts exist (verify with: `test -f dist/index.js`)
 - [ ] Prisma client generated (`npx prisma generate`)
 - [ ] Database migrations prepared (`npx prisma migrate status`)
 - [ ] No build-time dependencies on runtime variables (e.g., DATABASE_URL)
@@ -459,7 +459,7 @@ Before deploying to production:
 ### Vercel Frontend Deployment (Monorepo)
 
 **Configuration Files**:
-- [ ] `vercel.json` exists in repository root
+- [ ] `vercel.json` _(configuration file)_ exists in repository root
 - [ ] `rootDirectory` set to frontend location (`frontend/` or `packages/frontend/`)
 - [ ] `installCommand` runs from workspace root (`cd ../.. && pnpm install`)
 - [ ] `buildCommand` configured correctly
@@ -504,21 +504,21 @@ Before deploying to production:
 - [ ] Test: SSH into server successfully
 
 **PM2 Configuration**:
-- [ ] `ecosystem.config.js` created with all services
+- [ ] `ecosystem.config.js` _(PM2 configuration)_ created with all services
 - [ ] `pre_deploy_local: 'npm run build && npm run test'` configured
 - [ ] `max_restarts: 10` to prevent infinite loops
 - [ ] `min_uptime: '10s'` to detect crash loops
 - [ ] `wait_ready: true` for graceful startup
 - [ ] `max_memory_restart: '500M'` for leak protection
 - [ ] Log files configured (`error_file`, `out_file`)
-- [ ] Test: Validate config with `pm2 start ecosystem.config.js --dry-run`
+- [ ] Test: Validate PM2 config with dry run (command: `pm2 start ecosystem.config.js --dry-run`)
 
 **Build & Deploy**:
 - [ ] TypeScript built (`npm run build`)
-- [ ] Compiled files verified (`test -f dist/index.js`)
+- [ ] Compiled files verified (command: `test -f dist/index.js`)
 - [ ] Environment variables validated (`./scripts/validate-env.sh`)
 - [ ] Database migrations run (`npx prisma migrate deploy`)
-- [ ] PM2 processes started (`pm2 start ecosystem.config.js`)
+- [ ] PM2 processes started (command: `pm2 start ecosystem.config.js`)
 - [ ] PM2 process list saved (`pm2 save`)
 - [ ] Test: `pm2 status` shows all services "online" with 0 restarts
 
@@ -534,7 +534,7 @@ Before deploying to production:
 - [ ] Cloudflare Tunnel installed (`cloudflared`)
 - [ ] Tunnel created (`cloudflared tunnel create backend-api`)
 - [ ] DNS routed (`cloudflared tunnel route dns ...`)
-- [ ] Tunnel config created (`~/.cloudflared/config.yml`)
+- [ ] Tunnel config created (user file: `~/.cloudflared/config.yml`)
 - [ ] Tunnel running as service (`systemctl status cloudflared`)
 - [ ] Test: `curl https://api.yourdomain.com/health` returns 200
 
@@ -625,7 +625,7 @@ Before deploying to production:
 
 **PM2 Crash Loop (high restart count)**:
 - Fix 1: Check environment variables (`./scripts/validate-env.sh`)
-- Fix 2: Verify build completed (`test -f dist/index.js`)
+- Fix 2: Verify build completed (command: `test -f dist/index.js`)
 - Fix 3: Check logs (`pm2 logs --err`)
 
 **Mixed Content Error (HTTP blocked from HTTPS)**:

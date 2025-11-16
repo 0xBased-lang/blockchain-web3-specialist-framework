@@ -143,7 +143,7 @@ export class WorkflowEngine {
     plan: TaskPlan,
     agents: Map<string, BaseAgent>
   ): Promise<Result> {
-    const results = new Map<string, any>();
+    const results = new Map<string, Result>();
 
     for (const step of plan.steps) {
       // Check if dependencies are met
@@ -204,7 +204,7 @@ export class WorkflowEngine {
     return await Promise.all(promises);
   }
 
-  private resolveParams(params: any, results: Map<string, any>): any {
+  private resolveParams(params: Record<string, unknown>, results: Map<string, Result>): Record<string, unknown> {
     // Replace ${step-id.result} with actual results
     const resolved = { ...params };
 
@@ -290,7 +290,7 @@ export class ConflictResolver {
 export interface Proposal {
   agent: string;
   action: string;
-  params: any;
+  params: Record<string, unknown>;
   confidence: number;
   estimatedCost: number;
   estimatedTime: number;

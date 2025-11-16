@@ -340,7 +340,7 @@ Orchestrator:
 
 #### Specialized Agents
 
-**Blockchain Agent** (`src/agents/BlockchainAgent.ts`):
+**Blockchain Agent** _(example: `src/agents/BlockchainAgent.ts`)_:
 - General blockchain operations
 - Transaction management
 - Balance queries
@@ -500,7 +500,7 @@ export const config = {
 
 ```typescript
 class FrameworkError extends Error {
-  constructor(message: string, public code: string, public details?: any) {
+  constructor(message: string, public code: string, public details?: unknown) {
     super(message);
   }
 }

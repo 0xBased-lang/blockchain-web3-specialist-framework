@@ -142,7 +142,7 @@ export interface TransactionResponse {
   blockTime: number | null;
   status: 'success' | 'failed';
   fee: number;
-  err: any;
+  err: unknown;
 }
 ```
 
