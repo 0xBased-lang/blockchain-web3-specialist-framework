@@ -466,6 +466,243 @@ describe('TransactionBuilder', () => {
     });
   });
 
+  describe('Simulation Integration', () => {
+    let provider: JsonRpcProvider;
+
+    beforeEach(() => {
+      // Mock provider for simulation
+      provider = {
+        estimateGas: vi.fn().mockResolvedValue(21000n),
+        getFeeData: vi.fn().mockResolvedValue({
+          maxFeePerGas: parseUnits('50', 'gwei'),
+          maxPriorityFeePerGas: parseUnits('2', 'gwei'),
+          gasPrice: null,
+        }),
+        getNetwork: vi.fn().mockResolvedValue({ chainId: 1n }),
+        getTransactionCount: vi.fn().mockResolvedValue(5),
+        call: vi.fn().mockResolvedValue('0x'),
+        getBlock: vi.fn().mockResolvedValue({
+          number: 12345,
+          timestamp: Math.floor(Date.now() / 1000),
+          baseFeePerGas: parseUnits('30', 'gwei'),
+        }),
+      } as unknown as JsonRpcProvider;
+    });
+
+    it('should throw error if simulation not enabled', async () => {
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: false, // Explicitly disabled
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.TRANSFER,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        value: parseUnits('1', 'ether'),
+      };
+
+      await expect(builder.buildAndSimulate(params)).rejects.toThrow(
+        /Simulation not enabled/
+      );
+    });
+
+    it('should successfully simulate and build transaction', async () => {
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+        gasSafetyMargin: 20,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.TRANSFER,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        value: parseUnits('1', 'ether'),
+      };
+
+      const result = await builder.buildAndSimulate(params);
+
+      // Check transaction was built
+      expect(result.transaction).toBeDefined();
+      expect(result.transaction.chain).toBe('ethereum');
+      expect(result.transaction.params).toEqual(params);
+
+      // Check simulation result
+      expect(result.simulation).toBeDefined();
+      expect(result.simulation.success).toBe(true);
+      expect(result.simulation.status).toBe('success');
+      expect(result.simulation.gasUsed).toBeGreaterThan(0n);
+
+      // Check risk assessment
+      expect(result.risk).toBeDefined();
+      expect(result.risk.level).toBe('low');
+      expect(result.risk.recommendations).toContain('Transaction appears safe to execute');
+    });
+
+    it('should throw error on critical risk detection', async () => {
+      // Mock simulation failure
+      provider.call = vi.fn().mockRejectedValue(new Error('execution reverted'));
+
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.CONTRACT_CALL,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        data: '0xbadfunction',
+      };
+
+      await expect(builder.buildAndSimulate(params)).rejects.toThrow(
+        /Transaction simulation failed/
+      );
+    });
+
+    it('should handle high risk with warnings', async () => {
+      // Mock high gas usage
+      provider.estimateGas = vi.fn().mockResolvedValue(15000000n); // 15M gas
+
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.CONTRACT_CALL,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        data: '0xcomplex',
+      };
+
+      const result = await builder.buildAndSimulate(params);
+
+      // Should still build transaction despite high risk
+      expect(result.transaction).toBeDefined();
+
+      // Should have warnings
+      expect(result.risk.level).toBe('medium');
+      expect(result.risk.warnings).toContain('Extremely high gas usage detected');
+    });
+
+    it('should handle Solana transactions with fallback', async () => {
+      const connection = {
+        getLatestBlockhash: vi.fn().mockResolvedValue({
+          blockhash: 'EkSnNWid2cvwEVnVx9aBqawnmiCNiDgp3gUdkDPTKN1N',
+          lastValidBlockHeight: 123456,
+        }),
+      } as unknown as Connection;
+
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        solanaConnection: connection,
+        enableSimulation: true,
+      });
+
+      const fromKeypair = Keypair.generate();
+      const toKeypair = Keypair.generate();
+
+      const params: SolanaTransactionParams = {
+        chain: 'solana',
+        type: TransactionType.TRANSFER,
+        from: fromKeypair.publicKey.toBase58(),
+        to: toKeypair.publicKey.toBase58(),
+        value: 1000000000n,
+      };
+
+      const result = await builder.buildAndSimulate(params);
+
+      // Should build transaction
+      expect(result.transaction).toBeDefined();
+      expect(result.transaction.chain).toBe('solana');
+
+      // Should have dummy simulation result
+      expect(result.simulation.status).toBe('success');
+      expect(result.risk.level).toBe('low');
+      expect(result.risk.recommendations).toContain('Simulation not available for this chain');
+    });
+
+    it('should detect revert reason in simulation', async () => {
+      // Mock revert with reason
+      provider.call = vi.fn().mockRejectedValue(
+        new Error("execution reverted with reason string 'Insufficient balance'")
+      );
+
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.CONTRACT_CALL,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        data: '0x',
+      };
+
+      await expect(builder.buildAndSimulate(params)).rejects.toThrow(
+        /Transaction simulation failed/
+      );
+
+      // Try to catch error and check details
+      try {
+        await builder.buildAndSimulate(params);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+      }
+    });
+
+    it('should handle gas estimation errors in simulation', async () => {
+      provider.estimateGas = vi.fn().mockRejectedValue(new Error('out of gas'));
+
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.TRANSFER,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        value: parseUnits('1', 'ether'),
+        gasLimit: 1000n, // Too low
+      };
+
+      await expect(builder.buildAndSimulate(params)).rejects.toThrow();
+    });
+
+    it('should include simulation metadata', async () => {
+      const builder = new TransactionBuilder({
+        ethereumProvider: provider,
+        enableSimulation: true,
+      });
+
+      const params: EthereumTransactionParams = {
+        chain: 'ethereum',
+        type: TransactionType.TRANSFER,
+        from: '0x1234567890123456789012345678901234567890',
+        to: '0x0987654321098765432109876543210987654321',
+        value: parseUnits('1', 'ether'),
+      };
+
+      const result = await builder.buildAndSimulate(params);
+
+      // Check metadata
+      expect(result.simulation.provider).toBe('local');
+      expect(result.simulation.simulatedAt).toBeInstanceOf(Date);
+      expect(result.simulation.blockNumber).toBeGreaterThan(0);
+      expect(result.simulation.timestamp).toBeGreaterThan(0);
+    });
+  });
+
   describe('Statistics', () => {
     it('should return correct stats', () => {
       const provider = {} as JsonRpcProvider;

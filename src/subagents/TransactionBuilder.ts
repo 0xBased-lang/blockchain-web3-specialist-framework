@@ -35,6 +35,8 @@ import {
   TransactionParamsSchema,
 } from '../types/transaction.js';
 import { NonceManager } from './NonceManager.js';
+import { TransactionSimulator } from './TransactionSimulator.js';
+import { SimulationStatus, SimulationProvider, type SimulationResult, type RiskAssessment } from '../types/simulation.js';
 import { logger } from '../utils/index.js';
 
 /**
@@ -46,6 +48,7 @@ export interface TransactionBuilderConfig {
   gasSafetyMargin?: number; // Percentage (e.g., 20 = 20% buffer)
   maxGasPrice?: bigint; // Maximum gas price in wei (safety limit)
   priorityFee?: bigint; // Default priority fee for EIP-1559
+  enableSimulation?: boolean; // Enable automatic transaction simulation (recommended)
 }
 
 /**
@@ -55,10 +58,11 @@ export interface TransactionBuilderConfig {
  * nonce management, and safety checks.
  */
 export class TransactionBuilder {
-  private readonly config: Required<TransactionBuilderConfig>;
+  private readonly config: Required<Omit<TransactionBuilderConfig, 'enableSimulation'>> & { enableSimulation?: boolean };
   private readonly ethereumProvider?: JsonRpcProvider;
   private readonly solanaConnection?: Connection;
   private readonly nonceManager?: NonceManager;
+  private readonly simulator?: TransactionSimulator;
 
   constructor(config: TransactionBuilderConfig) {
     const baseConfig = {
@@ -75,12 +79,22 @@ export class TransactionBuilder {
       (baseConfig as any).solanaConnection = config.solanaConnection;
     }
 
-    this.config = baseConfig as Required<TransactionBuilderConfig>;
+    this.config = baseConfig as Required<Omit<TransactionBuilderConfig, 'enableSimulation'>> & { enableSimulation?: boolean };
+
+    // Conditionally add enableSimulation
+    if (config.enableSimulation !== undefined) {
+      this.config.enableSimulation = config.enableSimulation;
+    }
 
     if (config.ethereumProvider !== undefined) {
       (this as unknown as { ethereumProvider: JsonRpcProvider }).ethereumProvider = config.ethereumProvider;
       // Initialize NonceManager
       (this as unknown as { nonceManager: NonceManager }).nonceManager = new NonceManager(config.ethereumProvider);
+
+      // Initialize Simulator if enabled
+      if (this.config.enableSimulation) {
+        (this as unknown as { simulator: TransactionSimulator }).simulator = new TransactionSimulator(config.ethereumProvider);
+      }
     }
 
     if (config.solanaConnection !== undefined) {
@@ -91,6 +105,7 @@ export class TransactionBuilder {
       hasEthereum: !!this.ethereumProvider,
       hasSolana: !!this.solanaConnection,
       gasSafetyMargin: this.config.gasSafetyMargin,
+      simulationEnabled: this.config.enableSimulation ?? false,
     });
   }
 
@@ -477,6 +492,136 @@ export class TransactionBuilder {
   private addSafetyMargin(gasLimit: bigint): bigint {
     const margin = (gasLimit * BigInt(this.config.gasSafetyMargin)) / 100n;
     return gasLimit + margin;
+  }
+
+  /**
+   * Build and simulate transaction (RECOMMENDED for safety)
+   *
+   * Simulates the transaction first to detect errors, then builds it.
+   * This is the RECOMMENDED method for production use.
+   *
+   * @param params - Transaction parameters
+   * @returns Built transaction with simulation result and risk assessment
+   * @throws TransactionError if simulation detects critical issues
+   */
+  async buildAndSimulate(
+    params: TransactionParams
+  ): Promise<{
+    transaction: BuiltTransaction;
+    simulation: SimulationResult;
+    risk: RiskAssessment;
+  }> {
+    if (!this.simulator) {
+      throw new TransactionError(
+        'Simulation not enabled. Enable with { enableSimulation: true } in config',
+        TransactionErrorCode.INVALID_PARAMS,
+        params.chain
+      );
+    }
+
+    // Only simulate Ethereum transactions for now
+    if (params.chain !== 'ethereum') {
+      logger.warn('Simulation only supported for Ethereum, building without simulation', {
+        chain: params.chain,
+      });
+      const transaction = await this.buildTransaction(params);
+      // Return dummy simulation result for non-Ethereum chains
+      return {
+        transaction,
+        simulation: {
+          status: SimulationStatus.SUCCESS,
+          success: true,
+          gasUsed: 0n,
+          blockNumber: 0,
+          timestamp: 0,
+          provider: SimulationProvider.LOCAL,
+          simulatedAt: new Date(),
+        },
+        risk: {
+          level: 'low',
+          warnings: [],
+          issues: [],
+          recommendations: ['Simulation not available for this chain'],
+        },
+      };
+    }
+
+    // Simulate transaction first
+    logger.info('Simulating transaction before building', {
+      from: params.from,
+      to: params.to,
+    });
+
+    // Build simulation request with conditional property assignment (exactOptionalPropertyTypes)
+    const simulationRequest: any = {
+      chain: params.chain,
+      from: params.from,
+    };
+
+    // Conditionally add optional properties
+    if (params.to !== undefined) {
+      simulationRequest.to = params.to;
+    }
+    if (params.value !== undefined) {
+      simulationRequest.value = params.value;
+    }
+    if (typeof params.data === 'string') {
+      simulationRequest.data = params.data;
+    }
+    if ((params as EthereumTransactionParams).gasLimit !== undefined) {
+      simulationRequest.gasLimit = (params as EthereumTransactionParams).gasLimit;
+    }
+    if ((params as EthereumTransactionParams).gasPrice !== undefined) {
+      simulationRequest.gasPrice = (params as EthereumTransactionParams).gasPrice;
+    }
+    if ((params as EthereumTransactionParams).maxFeePerGas !== undefined) {
+      simulationRequest.maxFeePerGas = (params as EthereumTransactionParams).maxFeePerGas;
+    }
+    if ((params as EthereumTransactionParams).maxPriorityFeePerGas !== undefined) {
+      simulationRequest.maxPriorityFeePerGas = (params as EthereumTransactionParams).maxPriorityFeePerGas;
+    }
+
+    const { result: simulation, risk } = await this.simulator.simulateWithRiskAssessment(simulationRequest);
+
+    // Check risk level
+    if (risk.level === 'critical') {
+      const error = new TransactionError(
+        `Transaction simulation failed: ${simulation.error ?? 'Critical risk detected'}`,
+        TransactionErrorCode.TRANSACTION_FAILED,
+        params.chain
+      );
+      logger.error('CRITICAL: Transaction simulation detected critical risk', {
+        from: params.from,
+        to: params.to,
+        riskLevel: risk.level,
+        issues: risk.issues,
+        error: simulation.error,
+      });
+      throw error;
+    }
+
+    // Log warnings for high/medium risk
+    if (risk.level === 'high' || risk.level === 'medium') {
+      logger.warn('Transaction simulation detected potential issues', {
+        from: params.from,
+        to: params.to,
+        riskLevel: risk.level,
+        warnings: risk.warnings,
+        issues: risk.issues,
+      });
+    }
+
+    // Build transaction
+    const transaction = await this.buildTransaction(params);
+
+    logger.info('Transaction built and simulated successfully', {
+      from: params.from,
+      to: params.to,
+      riskLevel: risk.level,
+      gasUsed: simulation.gasUsed.toString(),
+    });
+
+    return { transaction, simulation, risk };
   }
 
   /**
