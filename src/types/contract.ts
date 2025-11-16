@@ -267,7 +267,7 @@ export interface ContractSafetyScore {
  */
 
 export const ContractAnalysisRequestSchema = z.object({
-  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+  address: z.string().min(1, 'Address is required'),
   chain: z.enum(['ethereum', 'solana']),
   metadata: z
     .object({
