@@ -119,16 +119,12 @@ describe('MultiChainResourceManager', () => {
       await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect to node, but parsing works
     });
 
-    it(
-      'should parse Solana account URI',
-      async () => {
-        const uri = 'multichain://solana/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+    it('should parse Solana account URI', async () => {
+      const uri = 'multichain://solana/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Should not throw on parse
-        await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect to node, but parsing works
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      // Should not throw on parse
+      await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect to node, but parsing works
+    }, 15000); // 15 second timeout for retry logic
 
     it('should parse auto-detect account URI with Ethereum address', async () => {
       const uri = 'multichain://auto/account/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
@@ -137,16 +133,12 @@ describe('MultiChainResourceManager', () => {
       await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect
     });
 
-    it(
-      'should parse auto-detect account URI with Solana address',
-      async () => {
-        const uri = 'multichain://auto/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+    it('should parse auto-detect account URI with Solana address', async () => {
+      const uri = 'multichain://auto/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Should not throw on parse - should detect as Solana
-        await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      // Should not throw on parse - should detect as Solana
+      await expect(resources.getAccountBalance(uri)).rejects.toThrow(); // Will fail to connect
+    }, 15000); // 15 second timeout for retry logic
 
     it('should throw error for invalid URI format', async () => {
       const invalidURIs = [
@@ -188,64 +180,44 @@ describe('MultiChainResourceManager', () => {
       await expect(resources.getResource(uri)).rejects.toThrow();
     });
 
-    it(
-      'should handle Solana token account resource',
-      async () => {
-        const uri = 'multichain://solana/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+    it('should handle Solana token account resource', async () => {
+      const uri = 'multichain://solana/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Will fail to connect but should route correctly
-        await expect(resources.getResource(uri)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      // Will fail to connect but should route correctly
+      await expect(resources.getResource(uri)).rejects.toThrow();
+    }, 15000); // 15 second timeout for retry logic
   });
 
   describe('Transaction Resources', () => {
-    it(
-      'should detect Ethereum transaction from hash format',
-      async () => {
-        const uri =
-          'multichain://auto/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
+    it('should detect Ethereum transaction from hash format', async () => {
+      const uri =
+        'multichain://auto/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
 
-        // Should detect 0x prefix as Ethereum
-        await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      // Should detect 0x prefix as Ethereum
+      await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
+    }, 15000); // 15 second timeout for retry logic
 
-    it(
-      'should detect Solana transaction from signature format',
-      async () => {
-        const uri =
-          'multichain://auto/transaction/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
+    it('should detect Solana transaction from signature format', async () => {
+      const uri =
+        'multichain://auto/transaction/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
 
-        // Should detect Base58 as Solana (no 0x prefix)
-        await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      // Should detect Base58 as Solana (no 0x prefix)
+      await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
+    }, 15000); // 15 second timeout for retry logic
 
-    it(
-      'should handle explicit Ethereum transaction',
-      async () => {
-        const uri =
-          'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
+    it('should handle explicit Ethereum transaction', async () => {
+      const uri =
+        'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
 
-        await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
+    }, 15000); // 15 second timeout for retry logic
 
-    it(
-      'should handle explicit Solana transaction',
-      async () => {
-        const uri =
-          'multichain://solana/transaction/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
+    it('should handle explicit Solana transaction', async () => {
+      const uri =
+        'multichain://solana/transaction/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
 
-        await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      await expect(resources.getTransaction(uri)).rejects.toThrow(); // Will fail to connect
+    }, 15000); // 15 second timeout for retry logic
   });
 
   describe('Error Handling', () => {
@@ -321,26 +293,22 @@ describe('MultiChainResourceManager', () => {
       }
     });
 
-    it(
-      'should return UnifiedTransactionResponse structure for transactions',
-      async () => {
-        const uri =
-          'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
+    it('should return UnifiedTransactionResponse structure for transactions', async () => {
+      const uri =
+        'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
 
-        try {
-          const tx = await resources.getTransaction(uri);
+      try {
+        const tx = await resources.getTransaction(uri);
 
-          // Should have unified format
-          expect(tx).toHaveProperty('chain');
-          expect(tx).toHaveProperty('signature');
-          expect(tx).toHaveProperty('status');
-        } catch (error) {
-          // Expected to fail without real node - just testing structure
-          expect(error).toBeDefined();
-        }
-      },
-      15000
-    ); // 15 second timeout for retry logic
+        // Should have unified format
+        expect(tx).toHaveProperty('chain');
+        expect(tx).toHaveProperty('signature');
+        expect(tx).toHaveProperty('status');
+      } catch (error) {
+        // Expected to fail without real node - just testing structure
+        expect(error).toBeDefined();
+      }
+    }, 15000); // 15 second timeout for retry logic
   });
 
   describe('Generic getResource Method', () => {
@@ -357,22 +325,18 @@ describe('MultiChainResourceManager', () => {
       }
     });
 
-    it(
-      'should route transaction URIs to getTransaction',
-      async () => {
-        const uri =
-          'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
+    it('should route transaction URIs to getTransaction', async () => {
+      const uri =
+        'multichain://ethereum/transaction/0x1234567890123456789012345678901234567890123456789012345678901234';
 
-        try {
-          const resource = await resources.getResource(uri);
-          expect(resource.type).toBe('transaction');
-          expect(resource.uri).toBe(uri);
-        } catch (error) {
-          // Expected - no real node
-          expect(error).toBeDefined();
-        }
-      },
-      15000
-    ); // 15 second timeout for retry logic
+      try {
+        const resource = await resources.getResource(uri);
+        expect(resource.type).toBe('transaction');
+        expect(resource.uri).toBe(uri);
+      } catch (error) {
+        // Expected - no real node
+        expect(error).toBeDefined();
+      }
+    }, 15000); // 15 second timeout for retry logic
   });
 });

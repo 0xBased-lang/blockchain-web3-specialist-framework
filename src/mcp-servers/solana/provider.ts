@@ -167,10 +167,7 @@ export class SolanaProvider {
   /**
    * Get SOL balance
    */
-  async getBalance(
-    address: SolanaAddress,
-    commitment: Commitment = 'confirmed'
-  ): Promise<bigint> {
+  async getBalance(address: SolanaAddress, commitment: Commitment = 'confirmed'): Promise<bigint> {
     return pRetry(
       async () => {
         const pubkey = new PublicKey(address);
@@ -184,10 +181,10 @@ export class SolanaProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Balance query failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            { address, error: String(error) }
-          );
+          logger.warn(`Balance query failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            address,
+            error: String(error),
+          });
         },
       }
     );
@@ -261,7 +258,11 @@ export class SolanaProvider {
           logMessages: tx.meta?.logMessages ?? [],
           preBalances: (tx.meta?.preBalances ?? []).map((b) => b.toString()),
           postBalances: (tx.meta?.postBalances ?? []).map((b) => b.toString()),
-          accounts: tx.transaction.message.getAccountKeys().keySegments().flat().map((k) => k.toBase58() as SolanaAddress),
+          accounts: tx.transaction.message
+            .getAccountKeys()
+            .keySegments()
+            .flat()
+            .map((k) => k.toBase58() as SolanaAddress),
         };
       },
       {
@@ -280,10 +281,7 @@ export class SolanaProvider {
   /**
    * Get block
    */
-  async getBlock(
-    slot: number,
-    commitment: Commitment = 'confirmed'
-  ): Promise<BlockInfo | null> {
+  async getBlock(slot: number, commitment: Commitment = 'confirmed'): Promise<BlockInfo | null> {
     return pRetry(
       async () => {
         // Only use 'confirmed' or 'finalized' for getBlock
@@ -299,19 +297,22 @@ export class SolanaProvider {
         }
 
         // blockHeight might not exist on all block types
-        const blockHeight = 'blockHeight' in block && typeof block.blockHeight === 'number'
-          ? block.blockHeight
-          : null;
+        const blockHeight =
+          'blockHeight' in block && typeof block.blockHeight === 'number'
+            ? block.blockHeight
+            : null;
 
         return {
           slot,
           blockhash: block.blockhash as Blockhash,
           previousBlockhash: block.previousBlockhash as Blockhash,
           parentSlot: block.parentSlot,
-          transactions: (block.transactions ?? []).map((tx) => {
-            const sig = tx.transaction.signatures[0];
-            return sig ? (sig as Signature) : ('' as Signature);
-          }).filter(sig => sig !== ''),
+          transactions: (block.transactions ?? [])
+            .map((tx) => {
+              const sig = tx.transaction.signatures[0];
+              return sig ? (sig as Signature) : ('' as Signature);
+            })
+            .filter((sig) => sig !== ''),
           blockTime: block.blockTime,
           blockHeight,
           rewards: (block.rewards ?? []).map((r) => ({
@@ -369,11 +370,10 @@ export class SolanaProvider {
     return pRetry(
       async () => {
         if (Date.now() - startTime > timeout) {
-          throw new SolanaError(
-            'Transaction confirmation timeout',
-            SolanaErrorCode.TIMEOUT,
-            { signature, timeout }
-          );
+          throw new SolanaError('Transaction confirmation timeout', SolanaErrorCode.TIMEOUT, {
+            signature,
+            timeout,
+          });
         }
 
         const status = await this.connection.getSignatureStatus(signature);
@@ -383,11 +383,10 @@ export class SolanaProvider {
         }
 
         if (status.value.err) {
-          throw new SolanaError(
-            'Transaction failed',
-            SolanaErrorCode.TRANSACTION_FAILED,
-            { signature, error: JSON.stringify(status.value.err) }
-          );
+          throw new SolanaError('Transaction failed', SolanaErrorCode.TRANSACTION_FAILED, {
+            signature,
+            error: JSON.stringify(status.value.err),
+          });
         }
 
         // Check if commitment level is met
@@ -410,9 +409,11 @@ export class SolanaProvider {
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
           const errorMsg = String(error);
-          if (!errorMsg.includes('Transaction not found') &&
-              !errorMsg.includes('Waiting for finalized confirmation') &&
-              !errorMsg.includes('Waiting for confirmed status')) {
+          if (
+            !errorMsg.includes('Transaction not found') &&
+            !errorMsg.includes('Waiting for finalized confirmation') &&
+            !errorMsg.includes('Waiting for confirmed status')
+          ) {
             logger.warn('Transaction confirmation failed', {
               signature,
               error: errorMsg,
@@ -444,10 +445,9 @@ export class SolanaProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Simulation failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            { error: String(error) }
-          );
+          logger.warn(`Simulation failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            error: String(error),
+          });
         },
       }
     );

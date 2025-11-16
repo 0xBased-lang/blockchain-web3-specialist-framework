@@ -53,7 +53,9 @@ describe('TransactionSimulator', () => {
     });
 
     it('should simulate contract call with data', async () => {
-      provider.call = vi.fn().mockResolvedValue('0x0000000000000000000000000000000000000000000000000000000000000001');
+      provider.call = vi
+        .fn()
+        .mockResolvedValue('0x0000000000000000000000000000000000000000000000000000000000000001');
 
       const request: SimulationRequest = {
         chain: 'ethereum',
@@ -103,9 +105,11 @@ describe('TransactionSimulator', () => {
     });
 
     it('should detect revert reason', async () => {
-      provider.call = vi.fn().mockRejectedValue(
-        new Error("execution reverted with reason string 'Insufficient balance'")
-      );
+      provider.call = vi
+        .fn()
+        .mockRejectedValue(
+          new Error("execution reverted with reason string 'Insufficient balance'")
+        );
 
       const request: SimulationRequest = {
         chain: 'ethereum',

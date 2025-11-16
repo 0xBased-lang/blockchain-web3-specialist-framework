@@ -8,11 +8,7 @@
  * - Execution time estimation
  */
 
-import {
-  type Task,
-  type Step,
-  type Dependency,
-} from '../types/agent.js';
+import { type Task, type Step, type Dependency } from '../types/agent.js';
 import { logger } from '../utils/index.js';
 
 /**

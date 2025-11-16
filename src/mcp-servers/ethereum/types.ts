@@ -17,9 +17,7 @@ export type Address = z.infer<typeof AddressSchema>;
 /**
  * Transaction hash validation (0x + 64 hex chars)
  */
-export const TxHashSchema = z
-  .string()
-  .regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash');
+export const TxHashSchema = z.string().regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash');
 
 export type TxHash = z.infer<typeof TxHashSchema>;
 

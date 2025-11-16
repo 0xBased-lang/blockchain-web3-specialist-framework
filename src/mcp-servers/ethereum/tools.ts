@@ -50,11 +50,9 @@ export class EthereumToolManager {
       });
     } catch (error) {
       logger.error('Failed to initialize wallet', { error: String(error) });
-      throw new EthereumError(
-        'Failed to initialize wallet',
-        EthereumErrorCode.NETWORK_ERROR,
-        { error: String(error) }
-      );
+      throw new EthereumError('Failed to initialize wallet', EthereumErrorCode.NETWORK_ERROR, {
+        error: String(error),
+      });
     }
   }
 
@@ -238,7 +236,7 @@ export class EthereumToolManager {
       });
 
       return {
-        hash: txResponse.hash as TxHash,
+        hash: txResponse.hash,
         from: txResponse.from.toLowerCase() as Address,
         to: txResponse.to ? (txResponse.to.toLowerCase() as Address) : null,
         value: txResponse.value.toString(),
@@ -261,11 +259,11 @@ export class EthereumToolManager {
         throw error;
       }
       logger.error('Failed to send transaction', { to, value: value.toString(), error });
-      throw new EthereumError(
-        'Transaction failed',
-        EthereumErrorCode.TRANSACTION_FAILED,
-        { to, value: value.toString(), error: String(error) }
-      );
+      throw new EthereumError('Transaction failed', EthereumErrorCode.TRANSACTION_FAILED, {
+        to,
+        value: value.toString(),
+        error: String(error),
+      });
     }
   }
 
@@ -285,11 +283,9 @@ export class EthereumToolManager {
       // Verify contract exists
       const code = await this.provider.getCode(address, blockTag);
       if (code === '0x') {
-        throw new EthereumError(
-          'No contract at address',
-          EthereumErrorCode.CONTRACT_CALL_FAILED,
-          { address }
-        );
+        throw new EthereumError('No contract at address', EthereumErrorCode.CONTRACT_CALL_FAILED, {
+          address,
+        });
       }
 
       const contract = new ethers.Contract(address, abi, this.provider.getProvider());
@@ -328,11 +324,11 @@ export class EthereumToolManager {
         throw error;
       }
       logger.error('Failed to call contract', { address, method, error });
-      throw new EthereumError(
-        'Contract call failed',
-        EthereumErrorCode.CONTRACT_CALL_FAILED,
-        { address, method, error: String(error) }
-      );
+      throw new EthereumError('Contract call failed', EthereumErrorCode.CONTRACT_CALL_FAILED, {
+        address,
+        method,
+        error: String(error),
+      });
     }
   }
 
@@ -403,17 +399,15 @@ export class EthereumToolManager {
 
       return {
         contractAddress: contractAddress.toLowerCase() as Address,
-        transactionHash: deploymentTx.hash as TxHash,
+        transactionHash: deploymentTx.hash,
         blockNumber: receipt?.blockNumber ?? 0,
         gasUsed: receipt?.gasUsed.toString() ?? '0',
       };
     } catch (error) {
       logger.error('Failed to deploy contract', { error });
-      throw new EthereumError(
-        'Contract deployment failed',
-        EthereumErrorCode.DEPLOYMENT_FAILED,
-        { error: String(error) }
-      );
+      throw new EthereumError('Contract deployment failed', EthereumErrorCode.DEPLOYMENT_FAILED, {
+        error: String(error),
+      });
     }
   }
 
@@ -441,11 +435,11 @@ export class EthereumToolManager {
       };
     } catch (error) {
       logger.error('Failed to estimate gas', { to, value: value.toString(), error });
-      throw new EthereumError(
-        'Gas estimation failed',
-        EthereumErrorCode.NETWORK_ERROR,
-        { to, value: value.toString(), error: String(error) }
-      );
+      throw new EthereumError('Gas estimation failed', EthereumErrorCode.NETWORK_ERROR, {
+        to,
+        value: value.toString(),
+        error: String(error),
+      });
     }
   }
 
@@ -467,11 +461,9 @@ export class EthereumToolManager {
       };
     } catch (error) {
       logger.error('Failed to get gas price', { error });
-      throw new EthereumError(
-        'Failed to get gas price',
-        EthereumErrorCode.NETWORK_ERROR,
-        { error: String(error) }
-      );
+      throw new EthereumError('Failed to get gas price', EthereumErrorCode.NETWORK_ERROR, {
+        error: String(error),
+      });
     }
   }
 
@@ -493,11 +485,10 @@ export class EthereumToolManager {
       const receipt = await this.provider.waitForTransaction(hash, confirmations);
 
       if (!receipt) {
-        throw new EthereumError(
-          'Transaction not found or timed out',
-          EthereumErrorCode.TIMEOUT,
-          { hash, confirmations }
-        );
+        throw new EthereumError('Transaction not found or timed out', EthereumErrorCode.TIMEOUT, {
+          hash,
+          confirmations,
+        });
       }
 
       return {
@@ -508,11 +499,11 @@ export class EthereumToolManager {
       };
     } catch (error) {
       logger.error('Failed to wait for transaction', { hash, confirmations, error });
-      throw new EthereumError(
-        'Failed to wait for transaction',
-        EthereumErrorCode.TIMEOUT,
-        { hash, confirmations, error: String(error) }
-      );
+      throw new EthereumError('Failed to wait for transaction', EthereumErrorCode.TIMEOUT, {
+        hash,
+        confirmations,
+        error: String(error),
+      });
     }
   }
 }

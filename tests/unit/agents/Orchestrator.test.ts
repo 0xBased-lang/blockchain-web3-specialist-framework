@@ -16,14 +16,16 @@ class MockAgent extends BaseAgent {
     return {
       id: `plan-${task.id}`,
       taskId: task.id,
-      steps: [{
-        id: 'step-1',
-        action: task.type,
-        agent: this.name,
-        params: task.params,
-        dependsOn: [],
-        timeout: 5000,
-      }],
+      steps: [
+        {
+          id: 'step-1',
+          action: task.type,
+          agent: this.name,
+          params: task.params,
+          dependsOn: [],
+          timeout: 5000,
+        },
+      ],
       dependencies: [],
       estimatedTime: 5000,
       requiredResources: [],
@@ -145,7 +147,9 @@ describe('OrchestratorAgent', () => {
       smallOrchestrator.registerAgent('a1', agent1);
       smallOrchestrator.registerAgent('a2', agent2);
 
-      expect(() => smallOrchestrator.registerAgent('a3', agent3)).toThrow('Maximum number of agents');
+      expect(() => smallOrchestrator.registerAgent('a3', agent3)).toThrow(
+        'Maximum number of agents'
+      );
     });
   });
 

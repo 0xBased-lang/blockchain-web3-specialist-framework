@@ -62,8 +62,12 @@ export class MultiChainProvider {
           ethereumConfig.chainId,
           ethereumConfig.chainName,
           {
-            ...(ethereumConfig.maxRetries !== undefined && { maxRetries: ethereumConfig.maxRetries }),
-            ...(ethereumConfig.retryDelay !== undefined && { retryDelay: ethereumConfig.retryDelay }),
+            ...(ethereumConfig.maxRetries !== undefined && {
+              maxRetries: ethereumConfig.maxRetries,
+            }),
+            ...(ethereumConfig.retryDelay !== undefined && {
+              retryDelay: ethereumConfig.retryDelay,
+            }),
           }
         );
         logger.info('Ethereum provider initialized', {

@@ -105,11 +105,10 @@ export class SolanaResourceManager {
       };
     } catch (error) {
       logger.error('Failed to get account resource', { address, error });
-      throw new SolanaError(
-        `Failed to fetch account ${address}`,
-        SolanaErrorCode.NETWORK_ERROR,
-        { address, error: String(error) }
-      );
+      throw new SolanaError(`Failed to fetch account ${address}`, SolanaErrorCode.NETWORK_ERROR, {
+        address,
+        error: String(error),
+      });
     }
   }
 
@@ -144,11 +143,10 @@ export class SolanaResourceManager {
       const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 
       if (accountInfo.owner !== TOKEN_PROGRAM_ID) {
-        throw new SolanaError(
-          'Account is not a token account',
-          SolanaErrorCode.ACCOUNT_NOT_FOUND,
-          { address, owner: accountInfo.owner }
-        );
+        throw new SolanaError('Account is not a token account', SolanaErrorCode.ACCOUNT_NOT_FOUND, {
+          address,
+          owner: accountInfo.owner,
+        });
       }
 
       // Placeholder: Real implementation would parse the account data
@@ -196,11 +194,9 @@ export class SolanaResourceManager {
       const tx = await this.provider.getTransaction(signature, commitment);
 
       if (!tx) {
-        throw new SolanaError(
-          'Transaction not found',
-          SolanaErrorCode.ACCOUNT_NOT_FOUND,
-          { signature }
-        );
+        throw new SolanaError('Transaction not found', SolanaErrorCode.ACCOUNT_NOT_FOUND, {
+          signature,
+        });
       }
 
       logger.info('Transaction resource fetched', { signature, slot: tx.slot });
@@ -241,11 +237,9 @@ export class SolanaResourceManager {
       const block = await this.provider.getBlock(targetSlot, commitment);
 
       if (!block) {
-        throw new SolanaError(
-          'Block not found',
-          SolanaErrorCode.ACCOUNT_NOT_FOUND,
-          { slot: targetSlot }
-        );
+        throw new SolanaError('Block not found', SolanaErrorCode.ACCOUNT_NOT_FOUND, {
+          slot: targetSlot,
+        });
       }
 
       logger.info('Block resource fetched', { slot: targetSlot });
@@ -260,11 +254,10 @@ export class SolanaResourceManager {
       if (error instanceof SolanaError) {
         throw error;
       }
-      throw new SolanaError(
-        `Failed to fetch block ${slot}`,
-        SolanaErrorCode.NETWORK_ERROR,
-        { slot, error: String(error) }
-      );
+      throw new SolanaError(`Failed to fetch block ${slot}`, SolanaErrorCode.NETWORK_ERROR, {
+        slot,
+        error: String(error),
+      });
     }
   }
 }

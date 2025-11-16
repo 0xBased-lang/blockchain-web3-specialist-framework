@@ -190,12 +190,17 @@ export const SimulationRequestSchema = z.object({
   maxFeePerGas: z.union([z.bigint(), z.string()]).optional(),
   maxPriorityFeePerGas: z.union([z.bigint(), z.string()]).optional(),
   blockNumber: z.union([z.number(), z.literal('latest')]).optional(),
-  stateOverrides: z.record(z.string(), z.object({
-    balance: z.string().optional(),
-    nonce: z.number().optional(),
-    code: z.string().optional(),
-    state: z.record(z.string(), z.string()).optional(),
-  })).optional(),
+  stateOverrides: z
+    .record(
+      z.string(),
+      z.object({
+        balance: z.string().optional(),
+        nonce: z.number().optional(),
+        code: z.string().optional(),
+        state: z.record(z.string(), z.string()).optional(),
+      })
+    )
+    .optional(),
 });
 
 export const AssetChangeSchema = z.object({

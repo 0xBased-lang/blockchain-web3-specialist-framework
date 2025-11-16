@@ -71,10 +71,7 @@ export class HDWalletManager extends WalletManager {
 
     // Validate mnemonic
     if (!this.validateMnemonic(validated.mnemonic)) {
-      throw new WalletError(
-        'Invalid BIP39 mnemonic phrase',
-        WalletErrorCode.INVALID_MNEMONIC
-      );
+      throw new WalletError('Invalid BIP39 mnemonic phrase', WalletErrorCode.INVALID_MNEMONIC);
     }
 
     // Check word count if specified
@@ -121,10 +118,7 @@ export class HDWalletManager extends WalletManager {
     label?: string
   ): Promise<string> {
     if (!this.encryptedSeed) {
-      throw new WalletError(
-        'No HD wallet seed imported',
-        WalletErrorCode.KEY_NOT_FOUND
-      );
+      throw new WalletError('No HD wallet seed imported', WalletErrorCode.KEY_NOT_FOUND);
     }
 
     // Get next index for this chain
@@ -169,10 +163,7 @@ export class HDWalletManager extends WalletManager {
     const validated = KeyDerivationRequestSchema.parse(request);
 
     if (!this.encryptedSeed) {
-      throw new WalletError(
-        'No HD wallet seed imported',
-        WalletErrorCode.KEY_NOT_FOUND
-      );
+      throw new WalletError('No HD wallet seed imported', WalletErrorCode.KEY_NOT_FOUND);
     }
 
     // Decrypt seed
@@ -182,11 +173,7 @@ export class HDWalletManager extends WalletManager {
       seed = await decrypt(this.encryptedSeed, validated.password);
 
       // Derive private key based on chain
-      const privateKey = this.derivePrivateKey(
-        seed,
-        validated.path,
-        validated.chain
-      );
+      const privateKey = this.derivePrivateKey(seed, validated.path, validated.chain);
 
       // Add wallet using base WalletManager
       const address = await this.addWallet(privateKey, validated.password, {
@@ -224,10 +211,7 @@ export class HDWalletManager extends WalletManager {
         return DERIVATION_PATHS.SOLANA(index);
 
       default:
-        throw new WalletError(
-          `Unsupported chain: ${chain}`,
-          WalletErrorCode.CHAIN_MISMATCH
-        );
+        throw new WalletError(`Unsupported chain: ${chain}`, WalletErrorCode.CHAIN_MISMATCH);
     }
   }
 
@@ -286,10 +270,7 @@ export class HDWalletManager extends WalletManager {
         return this.deriveSolanaKey(seed, path);
 
       default:
-        throw new WalletError(
-          `Unsupported chain: ${chain}`,
-          WalletErrorCode.CHAIN_MISMATCH
-        );
+        throw new WalletError(`Unsupported chain: ${chain}`, WalletErrorCode.CHAIN_MISMATCH);
     }
   }
 

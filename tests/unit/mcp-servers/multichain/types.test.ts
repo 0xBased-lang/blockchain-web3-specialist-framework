@@ -157,7 +157,8 @@ describe('Multi-Chain Type System', () => {
     });
 
     it('should parse transaction URIs', () => {
-      const ethUri = 'multichain://ethereum/transaction/0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      const ethUri =
+        'multichain://ethereum/transaction/0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
       const parsed = parseMultiChainURI(ethUri);
 
       expect(parsed.chain).toBe(SupportedChain.ETHEREUM);

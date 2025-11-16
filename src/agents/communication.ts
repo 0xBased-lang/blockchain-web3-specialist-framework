@@ -133,10 +133,7 @@ export class MessageQueue {
    * @param agentId - Agent ID to register handler for
    * @param handler - Handler function
    */
-  registerHandler<T = unknown, R = unknown>(
-    agentId: string,
-    handler: MessageHandler<T, R>
-  ): void {
+  registerHandler<T = unknown, R = unknown>(agentId: string, handler: MessageHandler<T, R>): void {
     this.handlers.set(agentId, handler as MessageHandler);
     logger.info(`Registered message handler for agent: ${agentId}`);
 

@@ -403,7 +403,9 @@ export class MultiChainResourceManager {
           );
         }
 
-        const resource = await this.solanaResources.getTokenAccountResource(parsed.identifier as any);
+        const resource = await this.solanaResources.getTokenAccountResource(
+          parsed.identifier as any
+        );
         return {
           uri,
           type: 'token-account',
@@ -427,7 +429,9 @@ export class MultiChainResourceManager {
           );
         }
 
-        const resource = await this.ethereumResources.getContractResource(parsed.identifier as `0x${string}`);
+        const resource = await this.ethereumResources.getContractResource(
+          parsed.identifier as `0x${string}`
+        );
         return {
           uri,
           type: 'contract',

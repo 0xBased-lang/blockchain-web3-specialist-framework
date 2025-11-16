@@ -164,14 +164,10 @@ describe('MultiChainProvider', () => {
     });
 
     it('should route to Ethereum provider', async () => {
-      const result = await provider.routeToChain(
-        SupportedChain.ETHEREUM,
-        undefined,
-        async (p) => {
-          expect(p).toBeInstanceOf(EthereumProvider);
-          return 'ethereum-result';
-        }
-      );
+      const result = await provider.routeToChain(SupportedChain.ETHEREUM, undefined, async (p) => {
+        expect(p).toBeInstanceOf(EthereumProvider);
+        return 'ethereum-result';
+      });
 
       expect(result).toBe('ethereum-result');
     });
@@ -278,73 +274,57 @@ describe('MultiChainProvider', () => {
       expect(health.error).toBeDefined();
     });
 
-    it(
-      'should check Solana health (expect failure without node)',
-      async () => {
-        const health = await provider.checkChainHealth(SupportedChain.SOLANA);
+    it('should check Solana health (expect failure without node)', async () => {
+      const health = await provider.checkChainHealth(SupportedChain.SOLANA);
 
-        expect(health.chain).toBe(SupportedChain.SOLANA);
-        expect(health.lastChecked).toBeInstanceOf(Date);
-        expect(typeof health.latency).toBe('number');
-        expect(typeof health.healthy).toBe('boolean');
-        // Without local node, should be unhealthy
-        expect(health.healthy).toBe(false);
-        expect(health.error).toBeDefined();
-      },
-      10000
-    ); // 10 second timeout for retry logic
+      expect(health.chain).toBe(SupportedChain.SOLANA);
+      expect(health.lastChecked).toBeInstanceOf(Date);
+      expect(typeof health.latency).toBe('number');
+      expect(typeof health.healthy).toBe('boolean');
+      // Without local node, should be unhealthy
+      expect(health.healthy).toBe(false);
+      expect(health.error).toBeDefined();
+    }, 10000); // 10 second timeout for retry logic
 
-    it(
-      'should get overall status (expect failures without nodes)',
-      async () => {
-        const status = await provider.getStatus();
+    it('should get overall status (expect failures without nodes)', async () => {
+      const status = await provider.getStatus();
 
-        expect(status.ethereum).toBeDefined();
-        expect(status.solana).toBeDefined();
-        expect(typeof status.overallHealthy).toBe('boolean');
-        expect(status.ethereum.chain).toBe(SupportedChain.ETHEREUM);
-        expect(status.solana.chain).toBe(SupportedChain.SOLANA);
-        // Both chains should be unhealthy without nodes
-        expect(status.ethereum.healthy).toBe(false);
-        expect(status.solana.healthy).toBe(false);
-        expect(status.overallHealthy).toBe(false);
-      },
-      10000
-    ); // 10 second timeout for retry logic
+      expect(status.ethereum).toBeDefined();
+      expect(status.solana).toBeDefined();
+      expect(typeof status.overallHealthy).toBe('boolean');
+      expect(status.ethereum.chain).toBe(SupportedChain.ETHEREUM);
+      expect(status.solana.chain).toBe(SupportedChain.SOLANA);
+      // Both chains should be unhealthy without nodes
+      expect(status.ethereum.healthy).toBe(false);
+      expect(status.solana.healthy).toBe(false);
+      expect(status.overallHealthy).toBe(false);
+    }, 10000); // 10 second timeout for retry logic
 
-    it(
-      'should cache health status',
-      async () => {
-        // First call - populates cache
-        await provider.getStatus();
+    it('should cache health status', async () => {
+      // First call - populates cache
+      await provider.getStatus();
 
-        // Get cached health
-        const ethereumHealth = provider.getCachedHealth(SupportedChain.ETHEREUM);
-        expect(ethereumHealth).toBeDefined();
-        expect(typeof ethereumHealth).toBe('object');
-        expect('chain' in ethereumHealth).toBe(true);
+      // Get cached health
+      const ethereumHealth = provider.getCachedHealth(SupportedChain.ETHEREUM);
+      expect(ethereumHealth).toBeDefined();
+      expect(typeof ethereumHealth).toBe('object');
+      expect('chain' in ethereumHealth).toBe(true);
 
-        const solanaHealth = provider.getCachedHealth(SupportedChain.SOLANA);
-        expect(solanaHealth).toBeDefined();
-        expect(typeof solanaHealth).toBe('object');
-        expect('chain' in solanaHealth).toBe(true);
-      },
-      10000
-    ); // 10 second timeout for retry logic
+      const solanaHealth = provider.getCachedHealth(SupportedChain.SOLANA);
+      expect(solanaHealth).toBeDefined();
+      expect(typeof solanaHealth).toBe('object');
+      expect('chain' in solanaHealth).toBe(true);
+    }, 10000); // 10 second timeout for retry logic
 
-    it(
-      'should get all cached health',
-      async () => {
-        await provider.getStatus();
+    it('should get all cached health', async () => {
+      await provider.getStatus();
 
-        const allHealth = provider.getCachedHealth();
-        expect(allHealth).toBeInstanceOf(Map);
-        if (allHealth instanceof Map) {
-          expect(allHealth.size).toBeGreaterThan(0);
-        }
-      },
-      10000
-    ); // 10 second timeout for retry logic
+      const allHealth = provider.getCachedHealth();
+      expect(allHealth).toBeInstanceOf(Map);
+      if (allHealth instanceof Map) {
+        expect(allHealth.size).toBeGreaterThan(0);
+      }
+    }, 10000); // 10 second timeout for retry logic
 
     it('should return unhealthy status for unconfigured provider', async () => {
       const ethereumOnlyProvider = new MultiChainProvider(

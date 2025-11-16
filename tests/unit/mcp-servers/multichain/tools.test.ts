@@ -1,10 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MultiChainToolManager } from '../../../../src/mcp-servers/multichain/tools.js';
 import { MultiChainProvider } from '../../../../src/mcp-servers/multichain/provider.js';
-import {
-  SupportedChain,
-  MultiChainError,
-} from '../../../../src/mcp-servers/multichain/types.js';
+import { SupportedChain, MultiChainError } from '../../../../src/mcp-servers/multichain/types.js';
 
 describe('MultiChainToolManager', () => {
   let provider: MultiChainProvider;
@@ -162,59 +159,43 @@ describe('MultiChainToolManager', () => {
   });
 
   describe('Query Balance', () => {
-    it(
-      'should detect Ethereum address and route correctly',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          chain: 'auto',
-        };
+    it('should detect Ethereum address and route correctly', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        chain: 'auto',
+      };
 
-        // Will fail to connect but should route to Ethereum
-        await expect(tools.queryBalance(params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route to Ethereum
+      await expect(tools.queryBalance(params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
-    it(
-      'should detect Solana address and route correctly',
-      async () => {
-        const params = {
-          address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
-          chain: 'auto',
-        };
+    it('should detect Solana address and route correctly', async () => {
+      const params = {
+        address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
+        chain: 'auto',
+      };
 
-        // Will fail to connect but should route to Solana (with timeout)
-        await expect(tools.queryBalance(params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route to Solana (with timeout)
+      await expect(tools.queryBalance(params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
-    it(
-      'should handle explicit Ethereum chain',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          chain: 'ethereum',
-        };
+    it('should handle explicit Ethereum chain', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        chain: 'ethereum',
+      };
 
-        await expect(tools.queryBalance(params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      await expect(tools.queryBalance(params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
-    it(
-      'should handle explicit Solana chain',
-      async () => {
-        const params = {
-          address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
-          chain: 'solana',
-        };
+    it('should handle explicit Solana chain', async () => {
+      const params = {
+        address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
+        chain: 'solana',
+      };
 
-        await expect(tools.queryBalance(params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      await expect(tools.queryBalance(params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should validate parameters', async () => {
       const invalidParams = {
@@ -244,9 +225,7 @@ describe('MultiChainToolManager', () => {
       };
 
       await expect(ethTools.queryBalance(params)).rejects.toThrow(MultiChainError);
-      await expect(ethTools.queryBalance(params)).rejects.toThrow(
-        'Solana tools not available'
-      );
+      await expect(ethTools.queryBalance(params)).rejects.toThrow('Solana tools not available');
     });
   });
 
@@ -291,9 +270,7 @@ describe('MultiChainToolManager', () => {
       };
 
       await expect(ethTools.sendTransaction(params)).rejects.toThrow(MultiChainError);
-      await expect(ethTools.sendTransaction(params)).rejects.toThrow(
-        'Solana tools not available'
-      );
+      await expect(ethTools.sendTransaction(params)).rejects.toThrow('Solana tools not available');
     });
   });
 
@@ -338,19 +315,15 @@ describe('MultiChainToolManager', () => {
   });
 
   describe('Execute Tool', () => {
-    it(
-      'should execute query_balance tool',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          chain: 'ethereum',
-        };
+    it('should execute query_balance tool', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        chain: 'ethereum',
+      };
 
-        // Will fail to connect but should route correctly
-        await expect(tools.executeTool('multichain_query_balance', params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route correctly
+      await expect(tools.executeTool('multichain_query_balance', params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should execute send_transaction tool', async () => {
       const params = {
@@ -358,9 +331,7 @@ describe('MultiChainToolManager', () => {
         amount: '1000000000000000000',
       };
 
-      await expect(
-        tools.executeTool('multichain_send_transaction', params)
-      ).rejects.toThrow();
+      await expect(tools.executeTool('multichain_send_transaction', params)).rejects.toThrow();
     });
 
     it('should execute transfer_token tool', async () => {
@@ -381,25 +352,21 @@ describe('MultiChainToolManager', () => {
   });
 
   describe('Error Handling', () => {
-    it(
-      'should wrap errors in MultiChainError',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-        };
+    it('should wrap errors in MultiChainError', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+      };
 
-        try {
-          await tools.queryBalance(params);
-          expect.fail('Should have thrown');
+      try {
+        await tools.queryBalance(params);
+        expect.fail('Should have thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(MultiChainError);
         if (error instanceof MultiChainError) {
           expect(error.details).toBeDefined();
         }
       }
-      },
-      15000
-    ); // 15 second timeout
+    }, 15000); // 15 second timeout
 
     it('should preserve MultiChainError when re-throwing', async () => {
       const ethOnlyProvider = new MultiChainProvider(

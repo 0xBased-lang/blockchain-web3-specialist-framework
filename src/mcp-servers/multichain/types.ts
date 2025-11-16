@@ -73,10 +73,7 @@ export function detectChain(address: string): ChainDetectionResult {
 /**
  * Validate address matches expected chain
  */
-export function validateAddressForChain(
-  address: string,
-  expectedChain: SupportedChain
-): boolean {
+export function validateAddressForChain(address: string, expectedChain: SupportedChain): boolean {
   if (expectedChain === SupportedChain.AUTO) {
     // Auto mode - just detect
     try {
@@ -150,9 +147,7 @@ export const QueryBalanceParamsSchema = z.object({
   chain: z.nativeEnum(SupportedChain).optional().default(SupportedChain.AUTO),
   token: z.string().optional(), // ERC20 or SPL token address
   // Commitment/confirmation level
-  commitment: z
-    .enum(['processed', 'confirmed', 'finalized', 'latest', 'pending'])
-    .optional(),
+  commitment: z.enum(['processed', 'confirmed', 'finalized', 'latest', 'pending']).optional(),
 });
 
 export type QueryBalanceParams = z.infer<typeof QueryBalanceParamsSchema>;
@@ -217,9 +212,7 @@ export type TransferTokenParams = z.infer<typeof TransferTokenParamsSchema>;
 export const GetTransactionParamsSchema = z.object({
   chain: z.nativeEnum(SupportedChain).optional().default(SupportedChain.AUTO),
   signature: z.string(), // Transaction hash or signature
-  commitment: z
-    .enum(['processed', 'confirmed', 'finalized', 'latest', 'pending'])
-    .optional(),
+  commitment: z.enum(['processed', 'confirmed', 'finalized', 'latest', 'pending']).optional(),
 });
 
 export type GetTransactionParams = z.infer<typeof GetTransactionParamsSchema>;

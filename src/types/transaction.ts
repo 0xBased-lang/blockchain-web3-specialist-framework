@@ -160,7 +160,10 @@ export const EthereumTransactionParamsSchema = z.object({
   chain: z.literal('ethereum'),
   type: TransactionTypeSchema,
   from: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
-  to: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address').optional(),
+  to: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address')
+    .optional(),
   value: z.union([z.string(), z.bigint()]).optional(),
   data: z.union([z.string(), z.instanceof(Uint8Array)]).optional(),
   gasLimit: z.bigint().optional(),

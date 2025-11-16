@@ -116,7 +116,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       }
 
       case 'transaction': {
-        const resource = await resourceManager.getTransactionResource(identifier as TxHash);
+        const resource = await resourceManager.getTransactionResource(identifier);
         return {
           contents: [
             {

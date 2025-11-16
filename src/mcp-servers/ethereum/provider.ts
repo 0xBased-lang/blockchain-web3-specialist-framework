@@ -70,14 +70,11 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Balance query failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              address,
-              blockTag,
-              error: String(error),
-            }
-          );
+          logger.warn(`Balance query failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            address,
+            blockTag,
+            error: String(error),
+          });
         },
       }
     );
@@ -129,13 +126,10 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Receipt query failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              hash,
-              error: String(error),
-            }
-          );
+          logger.warn(`Receipt query failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            hash,
+            error: String(error),
+          });
         },
       }
     );
@@ -168,9 +162,7 @@ export class EthereumProvider {
   /**
    * Get block by number or hash
    */
-  async getBlock(
-    blockHashOrBlockTag: ethers.BlockTag
-  ): Promise<ethers.Block | null> {
+  async getBlock(blockHashOrBlockTag: ethers.BlockTag): Promise<ethers.Block | null> {
     return pRetry(
       async () => {
         const block = await this.provider.getBlock(blockHashOrBlockTag);
@@ -180,13 +172,10 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Block query failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              blockHashOrBlockTag,
-              error: String(error),
-            }
-          );
+          logger.warn(`Block query failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            blockHashOrBlockTag,
+            error: String(error),
+          });
         },
       }
     );
@@ -295,13 +284,10 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Gas estimation failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              transaction,
-              error: String(error),
-            }
-          );
+          logger.warn(`Gas estimation failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            transaction,
+            error: String(error),
+          });
         },
       }
     );
@@ -320,13 +306,10 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Contract call failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              transaction,
-              error: String(error),
-            }
-          );
+          logger.warn(`Contract call failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            transaction,
+            error: String(error),
+          });
         },
       }
     );
@@ -378,14 +361,11 @@ export class EthereumProvider {
         retries: this.maxRetries,
         minTimeout: this.retryDelay,
         onFailedAttempt: (error) => {
-          logger.warn(
-            `Get code failed (attempt ${error.attemptNumber}/${this.maxRetries})`,
-            {
-              address,
-              blockTag,
-              error: String(error),
-            }
-          );
+          logger.warn(`Get code failed (attempt ${error.attemptNumber}/${this.maxRetries})`, {
+            address,
+            blockTag,
+            error: String(error),
+          });
         },
       }
     );

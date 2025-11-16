@@ -45,7 +45,9 @@ export interface ContractAnalyzerConfig {
  */
 export class ContractAnalyzer {
   private readonly ethereumProvider?: JsonRpcProvider;
-  private readonly config: Required<Omit<ContractAnalyzerConfig, 'ethereumProvider' | 'etherscanApiKey'>>;
+  private readonly config: Required<
+    Omit<ContractAnalyzerConfig, 'ethereumProvider' | 'etherscanApiKey'>
+  >;
   private readonly analysisCache: Map<string, ContractAnalysisResult> = new Map();
   private readonly maliciousContractsDB: Set<string> = new Set(); // Known malicious contracts
 
@@ -61,7 +63,8 @@ export class ContractAnalyzer {
 
     // Conditionally set ethereum provider (exactOptionalPropertyTypes pattern)
     if (config.ethereumProvider !== undefined) {
-      (this as unknown as { ethereumProvider: JsonRpcProvider }).ethereumProvider = config.ethereumProvider;
+      (this as unknown as { ethereumProvider: JsonRpcProvider }).ethereumProvider =
+        config.ethereumProvider;
     }
 
     // Initialize known malicious contracts database (in production, load from external source)
@@ -97,9 +100,10 @@ export class ContractAnalyzer {
     }
 
     // Get contract metadata
-    const metadata: ContractMetadata = validated.metadata !== undefined
-      ? this.normalizeMetadata(validated.metadata)
-      : await this.fetchContractMetadata(validated.address, validated.chain);
+    const metadata: ContractMetadata =
+      validated.metadata !== undefined
+        ? this.normalizeMetadata(validated.metadata)
+        : await this.fetchContractMetadata(validated.address, validated.chain);
 
     // Check if known malicious
     const isKnownMalicious = this.maliciousContractsDB.has(validated.address.toLowerCase());
@@ -110,17 +114,20 @@ export class ContractAnalyzer {
     }
 
     // Perform analysis
-    const bytecodeAnalysis = validated.options?.includeBytecodeAnalysis !== false
-      ? await this.analyzeBytecode(metadata)
-      : undefined;
+    const bytecodeAnalysis =
+      validated.options?.includeBytecodeAnalysis !== false
+        ? await this.analyzeBytecode(metadata)
+        : undefined;
 
-    const abiAnalysis = validated.options?.includeABIAnalysis !== false && metadata.abi !== undefined
-      ? await this.analyzeABI(metadata)
-      : undefined;
+    const abiAnalysis =
+      validated.options?.includeABIAnalysis !== false && metadata.abi !== undefined
+        ? await this.analyzeABI(metadata)
+        : undefined;
 
-    const sourceAnalysis = validated.options?.includeSourceAnalysis !== false && metadata.sourcecode !== undefined
-      ? await this.analyzeSource(metadata)
-      : undefined;
+    const sourceAnalysis =
+      validated.options?.includeSourceAnalysis !== false && metadata.sourcecode !== undefined
+        ? await this.analyzeSource(metadata)
+        : undefined;
 
     // Aggregate all findings
     const allFindings: VulnerabilityFinding[] = [];
@@ -152,7 +159,8 @@ export class ContractAnalyzer {
     // Calculate summary
     const summary = {
       totalFindings: allFindings.length,
-      criticalCount: allFindings.filter((f) => f.severity === VulnerabilitySeverity.CRITICAL).length,
+      criticalCount: allFindings.filter((f) => f.severity === VulnerabilitySeverity.CRITICAL)
+        .length,
       highCount: allFindings.filter((f) => f.severity === VulnerabilitySeverity.HIGH).length,
       mediumCount: allFindings.filter((f) => f.severity === VulnerabilitySeverity.MEDIUM).length,
       lowCount: allFindings.filter((f) => f.severity === VulnerabilitySeverity.LOW).length,
@@ -248,7 +256,8 @@ export class ContractAnalyzer {
           contract: metadata.address,
           bytecodeOffset: i / 2,
           title: 'SELFDESTRUCT Opcode Detected',
-          description: 'Contract contains SELFDESTRUCT which can destroy the contract and send all ETH',
+          description:
+            'Contract contains SELFDESTRUCT which can destroy the contract and send all ETH',
           impact: 'If unprotected, malicious actors could destroy the contract',
           recommendation: 'Ensure SELFDESTRUCT is protected by proper access controls (onlyOwner)',
           evidence: { opcodes: [opcode] },
@@ -266,9 +275,11 @@ export class ContractAnalyzer {
           contract: metadata.address,
           bytecodeOffset: i / 2,
           title: 'DELEGATECALL Detected',
-          description: 'Contract uses DELEGATECALL which executes code in the context of the calling contract',
+          description:
+            'Contract uses DELEGATECALL which executes code in the context of the calling contract',
           impact: 'If target is user-controlled, complete contract takeover is possible',
-          recommendation: 'Only use DELEGATECALL with trusted, immutable contracts. Implement strict validation.',
+          recommendation:
+            'Only use DELEGATECALL with trusted, immutable contracts. Implement strict validation.',
           evidence: { opcodes: [opcode] },
           confidence: 'high',
         });
@@ -301,8 +312,10 @@ export class ContractAnalyzer {
             bytecodeOffset: callOffset,
             title: 'Potential Reentrancy Pattern',
             description: 'Contract makes external calls before updating state (CALL before SSTORE)',
-            impact: '$47M lost to reentrancy attacks in 2024. State can be manipulated during external calls.',
-            recommendation: 'Use checks-effects-interactions pattern. Move all state updates before external calls. Implement ReentrancyGuard.',
+            impact:
+              '$47M lost to reentrancy attacks in 2024. State can be manipulated during external calls.',
+            recommendation:
+              'Use checks-effects-interactions pattern. Move all state updates before external calls. Implement ReentrancyGuard.',
             evidence: { opcodes: ['CALL', 'SSTORE'], pattern: 'CALL -> SSTORE' },
             confidence: 'medium', // Heuristic only
           });
@@ -338,7 +351,8 @@ export class ContractAnalyzer {
         title: 'Block Timestamp Usage',
         description: 'Contract uses block.timestamp which can be manipulated by miners',
         impact: 'Miners can manipulate timestamp by ±15 seconds',
-        recommendation: 'Avoid using timestamp for critical logic. Use block numbers instead where possible.',
+        recommendation:
+          'Avoid using timestamp for critical logic. Use block numbers instead where possible.',
         confidence: 'high',
       });
     }
@@ -395,7 +409,9 @@ export class ContractAnalyzer {
     // Parse ABI
     const functions = abi.filter((item) => item.type === 'function');
 
-    const publicFunctions = functions.filter((f) => f.stateMutability !== 'private' && f.stateMutability !== 'internal');
+    const publicFunctions = functions.filter(
+      (f) => f.stateMutability !== 'private' && f.stateMutability !== 'internal'
+    );
     const externalFunctions = functions.filter((f) => f.stateMutability === 'external');
     const payableFunctions = functions.filter((f) => f.stateMutability === 'payable');
 
@@ -424,7 +440,8 @@ export class ContractAnalyzer {
             title: 'Potentially Unprotected Payable Function',
             description: `Function ${func.name ?? 'unknown'} is payable but may lack access controls`,
             impact: 'Anyone can send ETH to this function, potentially causing unexpected behavior',
-            recommendation: 'Add access control modifiers (onlyOwner, onlyAdmin) or explicit require statements',
+            recommendation:
+              'Add access control modifiers (onlyOwner, onlyAdmin) or explicit require statements',
             confidence: 'medium',
           });
         }
@@ -457,9 +474,14 @@ export class ContractAnalyzer {
     const inheritanceDepth = this.calculateInheritanceDepth(source);
 
     // Check for security patterns
-    const usesReentrancyGuard = source.includes('ReentrancyGuard') || source.includes('nonReentrant');
-    const usesAccessControl = source.includes('Ownable') || source.includes('AccessControl') || source.includes('onlyOwner');
-    const usesCheckedMath = source.includes('SafeMath') || metadata.compilerVersion?.match(/0\.8\.\d+/) !== null;
+    const usesReentrancyGuard =
+      source.includes('ReentrancyGuard') || source.includes('nonReentrant');
+    const usesAccessControl =
+      source.includes('Ownable') ||
+      source.includes('AccessControl') ||
+      source.includes('onlyOwner');
+    const usesCheckedMath =
+      source.includes('SafeMath') || metadata.compilerVersion?.match(/0\.8\.\d+/) !== null;
 
     // Check for risky patterns
     if (!usesReentrancyGuard && source.includes('.call{')) {
@@ -485,7 +507,8 @@ export class ContractAnalyzer {
         title: 'Missing Access Control Framework',
         description: 'Contract does not use OpenZeppelin Ownable or AccessControl',
         impact: 'Access control may be implemented incorrectly',
-        recommendation: 'Use OpenZeppelin Ownable or AccessControl for standardized access management',
+        recommendation:
+          'Use OpenZeppelin Ownable or AccessControl for standardized access management',
         confidence: 'medium',
       });
     }
@@ -536,7 +559,10 @@ export class ContractAnalyzer {
   /**
    * Fetch contract metadata from blockchain and explorers
    */
-  private async fetchContractMetadata(address: string, chain: 'ethereum' | 'solana'): Promise<ContractMetadata> {
+  private async fetchContractMetadata(
+    address: string,
+    chain: 'ethereum' | 'solana'
+  ): Promise<ContractMetadata> {
     // Otherwise, fetch from blockchain
     if (chain !== 'ethereum') {
       throw new Error('Only Ethereum supported for automatic metadata fetching');
@@ -602,17 +628,23 @@ export class ContractAnalyzer {
     const recommendations: string[] = [];
 
     if (isKnownMalicious) {
-      recommendations.push('🚨 CRITICAL: Do NOT interact with this contract - it is known to be malicious');
+      recommendations.push(
+        '🚨 CRITICAL: Do NOT interact with this contract - it is known to be malicious'
+      );
       return recommendations;
     }
 
     if (riskLevel === 'critical') {
-      recommendations.push('⛔ CRITICAL RISK: Do NOT interact with this contract until critical issues are resolved');
+      recommendations.push(
+        '⛔ CRITICAL RISK: Do NOT interact with this contract until critical issues are resolved'
+      );
       recommendations.push('Have the contract professionally audited before use');
     }
 
     if (riskLevel === 'high') {
-      recommendations.push('⚠️ HIGH RISK: Exercise extreme caution when interacting with this contract');
+      recommendations.push(
+        '⚠️ HIGH RISK: Exercise extreme caution when interacting with this contract'
+      );
       recommendations.push('Consider using a test transaction with minimal value first');
     }
 
@@ -622,23 +654,35 @@ export class ContractAnalyzer {
       recommendations.push('Implement OpenZeppelin ReentrancyGuard immediately');
     }
 
-    const hasDelegatecall = findings.some((f) => f.category === VulnerabilityCategory.DELEGATECALL_INJECTION);
+    const hasDelegatecall = findings.some(
+      (f) => f.category === VulnerabilityCategory.DELEGATECALL_INJECTION
+    );
     if (hasDelegatecall) {
-      recommendations.push('Review all DELEGATECALL usage - ensure target contracts are immutable and trusted');
+      recommendations.push(
+        'Review all DELEGATECALL usage - ensure target contracts are immutable and trusted'
+      );
     }
 
-    const hasAccessControl = findings.some((f) => f.category === VulnerabilityCategory.ACCESS_CONTROL);
+    const hasAccessControl = findings.some(
+      (f) => f.category === VulnerabilityCategory.ACCESS_CONTROL
+    );
     if (hasAccessControl) {
-      recommendations.push('Implement proper access controls using OpenZeppelin Ownable or AccessControl');
+      recommendations.push(
+        'Implement proper access controls using OpenZeppelin Ownable or AccessControl'
+      );
     }
 
     if (riskLevel === 'medium' || riskLevel === 'low') {
-      recommendations.push('Contract appears relatively safe, but review all findings before interaction');
+      recommendations.push(
+        'Contract appears relatively safe, but review all findings before interaction'
+      );
     }
 
     if (riskLevel === 'minimal') {
       recommendations.push('✅ Contract appears safe based on automated analysis');
-      recommendations.push('Note: Automated analysis cannot detect all vulnerabilities - manual review recommended');
+      recommendations.push(
+        'Note: Automated analysis cannot detect all vulnerabilities - manual review recommended'
+      );
     }
 
     return recommendations;
@@ -649,7 +693,8 @@ export class ContractAnalyzer {
    */
   private calculateComplexity(source: string): number {
     // Count decision points: if, while, for, &&, ||, ?
-    const decisionPoints = (source.match(/\b(if|while|for|&&|\|\||switch|case|\?)\b/g) ?? []).length;
+    const decisionPoints = (source.match(/\b(if|while|for|&&|\|\||switch|case|\?)\b/g) ?? [])
+      .length;
     return decisionPoints + 1; // Add 1 for the base path
   }
 

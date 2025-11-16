@@ -74,11 +74,7 @@ export class WalletManager {
    * @param config - Wallet configuration
    * @returns Wallet address
    */
-  async addWallet(
-    privateKey: string,
-    password: string,
-    config: WalletConfig
-  ): Promise<string> {
+  async addWallet(privateKey: string, password: string, config: WalletConfig): Promise<string> {
     // Validate config
     const validatedConfig = WalletConfigSchema.parse(config);
 
@@ -167,16 +163,13 @@ export class WalletManager {
       privateKey = await decrypt(encrypted, validated.password);
 
       // Sign data based on chain
-      const signature = await this.signWithChain(
-        privateKey,
-        validated.data,
-        chain
-      );
+      const signature = await this.signWithChain(privateKey, validated.data, chain);
 
       logger.info('Data signed successfully', {
         address: validated.address,
         chain,
-        dataLength: typeof validated.data === 'string' ? validated.data.length : validated.data.length,
+        dataLength:
+          typeof validated.data === 'string' ? validated.data.length : validated.data.length,
       });
 
       return {
@@ -320,10 +313,7 @@ export class WalletManager {
         return this.deriveSolanaAddress(privateKey);
 
       default:
-        throw new WalletError(
-          `Unsupported chain: ${chain}`,
-          WalletErrorCode.CHAIN_MISMATCH
-        );
+        throw new WalletError(`Unsupported chain: ${chain}`, WalletErrorCode.CHAIN_MISMATCH);
     }
   }
 
@@ -396,10 +386,7 @@ export class WalletManager {
         return this.signSolana(privateKey, data);
 
       default:
-        throw new WalletError(
-          `Unsupported chain: ${chain}`,
-          WalletErrorCode.CHAIN_MISMATCH
-        );
+        throw new WalletError(`Unsupported chain: ${chain}`, WalletErrorCode.CHAIN_MISMATCH);
     }
   }
 

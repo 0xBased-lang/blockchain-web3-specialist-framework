@@ -71,40 +71,28 @@ describe('Multi-Chain MCP Server Integration', () => {
       expect(accountResource?.description?.length).toBeGreaterThan(10);
     });
 
-    it(
-      'should read Ethereum account resource',
-      async () => {
-        const uri = 'multichain://ethereum/account/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
+    it('should read Ethereum account resource', async () => {
+      const uri = 'multichain://ethereum/account/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
 
-        // Will fail to connect but should route to Ethereum
-        await expect(resourceManager.getResource(uri)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route to Ethereum
+      await expect(resourceManager.getResource(uri)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
-    it(
-      'should read Solana account resource',
-      async () => {
-        const uri = 'multichain://solana/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+    it('should read Solana account resource', async () => {
+      const uri = 'multichain://solana/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Will fail to connect but should route to Solana
-        await expect(resourceManager.getResource(uri)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route to Solana
+      await expect(resourceManager.getResource(uri)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
-    it(
-      'should auto-detect chain from address in resource URI',
-      async () => {
-        const ethUri = 'multichain://auto/account/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
-        const solUri = 'multichain://auto/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+    it('should auto-detect chain from address in resource URI', async () => {
+      const ethUri = 'multichain://auto/account/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
+      const solUri = 'multichain://auto/account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Will fail to connect but should route correctly
-        await expect(resourceManager.getResource(ethUri)).rejects.toThrow();
-        await expect(resourceManager.getResource(solUri)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route correctly
+      await expect(resourceManager.getResource(ethUri)).rejects.toThrow();
+      await expect(resourceManager.getResource(solUri)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should reject invalid resource URIs', async () => {
       const invalidUris = [
@@ -118,26 +106,24 @@ describe('Multi-Chain MCP Server Integration', () => {
       }
     });
 
-    it(
-      'should handle chain-specific resources',
-      async () => {
-        // Ethereum-specific: contract
-        const ethContractUri = 'multichain://ethereum/contract/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
+    it('should handle chain-specific resources', async () => {
+      // Ethereum-specific: contract
+      const ethContractUri =
+        'multichain://ethereum/contract/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0';
 
-        // Solana-specific: token-account
-        const solTokenUri =
-          'multichain://solana/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+      // Solana-specific: token-account
+      const solTokenUri =
+        'multichain://solana/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
-        // Both should fail to connect but route correctly (not throw "unsupported" error)
-        await expect(resourceManager.getResource(ethContractUri)).rejects.toThrow();
-        await expect(resourceManager.getResource(solTokenUri)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Both should fail to connect but route correctly (not throw "unsupported" error)
+      await expect(resourceManager.getResource(ethContractUri)).rejects.toThrow();
+      await expect(resourceManager.getResource(solTokenUri)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should reject chain-specific resources on wrong chain', async () => {
       // Try to get Solana token-account on Ethereum chain
-      const invalidUri = 'multichain://ethereum/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
+      const invalidUri =
+        'multichain://ethereum/token-account/DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK';
 
       await expect(resourceManager.getResource(invalidUri)).rejects.toThrow();
     });
@@ -222,19 +208,15 @@ describe('Multi-Chain MCP Server Integration', () => {
       expect(clearTool?.description).toContain('memory');
     });
 
-    it(
-      'should execute query_balance tool with auto-detection',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          chain: 'auto',
-        };
+    it('should execute query_balance tool with auto-detection', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        chain: 'auto',
+      };
 
-        // Will fail to connect but should route to Ethereum
-        await expect(toolManager.executeTool('multichain_query_balance', params)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Will fail to connect but should route to Ethereum
+      await expect(toolManager.executeTool('multichain_query_balance', params)).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should execute send_transaction tool', async () => {
       const params = {
@@ -243,7 +225,9 @@ describe('Multi-Chain MCP Server Integration', () => {
       };
 
       // Will fail (no wallet initialized) but should route correctly
-      await expect(toolManager.executeTool('multichain_send_transaction', params)).rejects.toThrow();
+      await expect(
+        toolManager.executeTool('multichain_send_transaction', params)
+      ).rejects.toThrow();
     });
 
     it('should execute transfer_token tool', async () => {
@@ -323,23 +307,19 @@ describe('Multi-Chain MCP Server Integration', () => {
       }
     });
 
-    it(
-      'should handle network failures gracefully',
-      async () => {
-        const params = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-        };
+    it('should handle network failures gracefully', async () => {
+      const params = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+      };
 
-        try {
-          await toolManager.executeTool('multichain_query_balance', params);
-          expect.fail('Should have thrown');
-        } catch (error) {
-          expect(error).toBeDefined();
-          // Should be network-related error (ECONNREFUSED)
-        }
-      },
-      15000
-    ); // 15 second timeout
+      try {
+        await toolManager.executeTool('multichain_query_balance', params);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeDefined();
+        // Should be network-related error (ECONNREFUSED)
+      }
+    }, 15000); // 15 second timeout
   });
 
   describe('Integration Scenarios', () => {
@@ -370,27 +350,27 @@ describe('Multi-Chain MCP Server Integration', () => {
       ).rejects.toThrow();
     });
 
-    it(
-      'should support cross-chain operations in same session',
-      async () => {
-        // Query Ethereum balance
-        const ethParams = {
-          address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          chain: 'ethereum',
-        };
+    it('should support cross-chain operations in same session', async () => {
+      // Query Ethereum balance
+      const ethParams = {
+        address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        chain: 'ethereum',
+      };
 
-        // Query Solana balance
-        const solParams = {
-          address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
-          chain: 'solana',
-        };
+      // Query Solana balance
+      const solParams = {
+        address: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK',
+        chain: 'solana',
+      };
 
-        // Both should route to their respective chains (will fail to connect)
-        await expect(toolManager.executeTool('multichain_query_balance', ethParams)).rejects.toThrow();
-        await expect(toolManager.executeTool('multichain_query_balance', solParams)).rejects.toThrow();
-      },
-      15000
-    ); // 15 second timeout
+      // Both should route to their respective chains (will fail to connect)
+      await expect(
+        toolManager.executeTool('multichain_query_balance', ethParams)
+      ).rejects.toThrow();
+      await expect(
+        toolManager.executeTool('multichain_query_balance', solParams)
+      ).rejects.toThrow();
+    }, 15000); // 15 second timeout
 
     it('should allow wallet initialization and clearing', async () => {
       // Initialize Ethereum wallet

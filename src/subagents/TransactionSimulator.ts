@@ -174,16 +174,24 @@ export class TransactionSimulator {
         tx.data = request.data;
       }
       if (request.gasLimit !== undefined) {
-        tx.gasLimit = typeof request.gasLimit === 'string' ? BigInt(request.gasLimit) : request.gasLimit;
+        tx.gasLimit =
+          typeof request.gasLimit === 'string' ? BigInt(request.gasLimit) : request.gasLimit;
       }
       if (request.gasPrice !== undefined) {
-        tx.gasPrice = typeof request.gasPrice === 'string' ? BigInt(request.gasPrice) : request.gasPrice;
+        tx.gasPrice =
+          typeof request.gasPrice === 'string' ? BigInt(request.gasPrice) : request.gasPrice;
       }
       if (request.maxFeePerGas !== undefined) {
-        tx.maxFeePerGas = typeof request.maxFeePerGas === 'string' ? BigInt(request.maxFeePerGas) : request.maxFeePerGas;
+        tx.maxFeePerGas =
+          typeof request.maxFeePerGas === 'string'
+            ? BigInt(request.maxFeePerGas)
+            : request.maxFeePerGas;
       }
       if (request.maxPriorityFeePerGas !== undefined) {
-        tx.maxPriorityFeePerGas = typeof request.maxPriorityFeePerGas === 'string' ? BigInt(request.maxPriorityFeePerGas) : request.maxPriorityFeePerGas;
+        tx.maxPriorityFeePerGas =
+          typeof request.maxPriorityFeePerGas === 'string'
+            ? BigInt(request.maxPriorityFeePerGas)
+            : request.maxPriorityFeePerGas;
       }
 
       // Call eth_call to simulate
@@ -281,7 +289,8 @@ export class TransactionSimulator {
     }
 
     const result: SimulationResult = {
-      status: errorCode === SimulationErrorCode.REVERT ? SimulationStatus.REVERT : SimulationStatus.FAIL,
+      status:
+        errorCode === SimulationErrorCode.REVERT ? SimulationStatus.REVERT : SimulationStatus.FAIL,
       success: false,
       gasUsed: 0n,
       blockNumber: 0,

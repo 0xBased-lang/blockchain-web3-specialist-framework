@@ -503,9 +503,7 @@ describe('TransactionBuilder', () => {
         value: parseUnits('1', 'ether'),
       };
 
-      await expect(builder.buildAndSimulate(params)).rejects.toThrow(
-        /Simulation not enabled/
-      );
+      await expect(builder.buildAndSimulate(params)).rejects.toThrow(/Simulation not enabled/);
     });
 
     it('should successfully simulate and build transaction', async () => {
@@ -630,9 +628,11 @@ describe('TransactionBuilder', () => {
 
     it('should detect revert reason in simulation', async () => {
       // Mock revert with reason
-      provider.call = vi.fn().mockRejectedValue(
-        new Error("execution reverted with reason string 'Insufficient balance'")
-      );
+      provider.call = vi
+        .fn()
+        .mockRejectedValue(
+          new Error("execution reverted with reason string 'Insufficient balance'")
+        );
 
       const builder = new TransactionBuilder({
         ethereumProvider: provider,

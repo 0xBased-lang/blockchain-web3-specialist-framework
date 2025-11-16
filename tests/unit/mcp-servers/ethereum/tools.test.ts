@@ -17,7 +17,9 @@ describe('EthereumToolManager', () => {
     vi.spyOn(mockProvider, 'getBalance').mockResolvedValue(1000000000000000000n); // 1 ETH
     vi.spyOn(mockProvider, 'getCode').mockResolvedValue('0x608060405234801561001057600080fd5b50');
     vi.spyOn(mockProvider, 'getBlockNumber').mockResolvedValue(1000000);
-    vi.spyOn(mockProvider, 'call').mockResolvedValue('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'); // 1 ETH in hex
+    vi.spyOn(mockProvider, 'call').mockResolvedValue(
+      '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
+    ); // 1 ETH in hex
     vi.spyOn(mockProvider, 'estimateGas').mockResolvedValue(21000n);
     vi.spyOn(mockProvider, 'getGasPrice').mockResolvedValue(50000000000n);
     vi.spyOn(mockProvider, 'getFeeData').mockResolvedValue({
@@ -227,9 +229,7 @@ describe('EthereumToolManager', () => {
 
       // Mock the underlying ethers provider's call method
       const mockInterface = new ethers.Interface(abi);
-      const encodedResult = mockInterface.encodeFunctionResult('balanceOf', [
-        1000000000000000000n,
-      ]);
+      const encodedResult = mockInterface.encodeFunctionResult('balanceOf', [1000000000000000000n]);
 
       const ethersProvider = mockProvider.getProvider();
       vi.spyOn(ethersProvider, 'call').mockResolvedValue(encodedResult);

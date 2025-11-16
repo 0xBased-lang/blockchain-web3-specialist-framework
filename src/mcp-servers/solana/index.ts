@@ -108,9 +108,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       }
 
       case 'token-account': {
-        const resource = await resourceManager.getTokenAccountResource(
-          identifier as SolanaAddress
-        );
+        const resource = await resourceManager.getTokenAccountResource(identifier as SolanaAddress);
         return {
           contents: [
             {

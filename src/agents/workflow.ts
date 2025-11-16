@@ -223,29 +223,26 @@ export class WorkflowEngine {
 
     try {
       // Execute with timeout
-      const result = await this.executeWithTimeout(
-        async () => {
-          // Create task plan for this step with resolved params
-          const resolvedStep = {
-            ...step,
-            params: resolvedParams,
-          };
+      const result = await this.executeWithTimeout(async () => {
+        // Create task plan for this step with resolved params
+        const resolvedStep = {
+          ...step,
+          params: resolvedParams,
+        };
 
-          const stepPlan = {
-            id: `plan-${step.id}`,
-            taskId: step.id,
-            steps: [resolvedStep],
-            dependencies: [],
-            estimatedTime: step.timeout,
-            requiredResources: [],
-            fallbackStrategies: [],
-            createdAt: new Date(),
-          };
+        const stepPlan = {
+          id: `plan-${step.id}`,
+          taskId: step.id,
+          steps: [resolvedStep],
+          dependencies: [],
+          estimatedTime: step.timeout,
+          requiredResources: [],
+          fallbackStrategies: [],
+          createdAt: new Date(),
+        };
 
-          return await agent.execute(stepPlan);
-        },
-        step.timeout
-      );
+        return await agent.execute(stepPlan);
+      }, step.timeout);
 
       logger.debug(`Step completed: ${step.id}`, { success: result.success });
       return result;

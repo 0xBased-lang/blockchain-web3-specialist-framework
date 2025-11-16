@@ -341,16 +341,15 @@ export class GasOptimizer {
       .filter((fee): fee is bigint => fee !== undefined);
 
     const medianPriorityFee =
-      priorityFees.length > 0
-        ? this.calculateMedian(priorityFees)
-        : parseUnits('2', 'gwei');
+      priorityFees.length > 0 ? this.calculateMedian(priorityFees) : parseUnits('2', 'gwei');
 
     // Apply strategy multipliers
     const baseFee = (medianBaseFee * BigInt(Math.floor(multiplier.base * 100))) / 100n;
     let priorityFee = (medianPriorityFee * BigInt(Math.floor(multiplier.priority * 100))) / 100n;
 
     // Ensure minimum priority fee
-    priorityFee = priorityFee < this.config.minPriorityFee ? this.config.minPriorityFee : priorityFee;
+    priorityFee =
+      priorityFee < this.config.minPriorityFee ? this.config.minPriorityFee : priorityFee;
 
     // Calculate max fee (base fee + priority fee + buffer)
     let maxFee = baseFee + priorityFee;

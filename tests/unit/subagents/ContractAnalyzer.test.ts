@@ -371,8 +371,9 @@ describe('ContractAnalyzer', () => {
 
       expect(result.sourceAnalysis?.usesAccessControl).toBe(false);
       const accessControlFinding = result.findings.find(
-        (f) => f.category === VulnerabilityCategory.ACCESS_CONTROL &&
-             f.title.includes('Missing Access Control Framework')
+        (f) =>
+          f.category === VulnerabilityCategory.ACCESS_CONTROL &&
+          f.title.includes('Missing Access Control Framework')
       );
       expect(accessControlFinding).toBeDefined();
     });
@@ -583,9 +584,7 @@ describe('ContractAnalyzer', () => {
         chain: 'ethereum',
       };
 
-      await expect(analyzer.analyzeContract(request)).rejects.toThrow(
-        /No contract deployed/
-      );
+      await expect(analyzer.analyzeContract(request)).rejects.toThrow(/No contract deployed/);
     });
 
     it('should throw error for invalid address format', async () => {
@@ -669,9 +668,7 @@ describe('ContractAnalyzer', () => {
       expect(result.isKnownMalicious).toBe(true);
       expect(result.riskLevel).toBe('critical');
 
-      const maliciousFinding = result.findings.find(
-        (f) => f.title === 'Known Malicious Contract'
-      );
+      const maliciousFinding = result.findings.find((f) => f.title === 'Known Malicious Contract');
       expect(maliciousFinding).toBeDefined();
       expect(maliciousFinding?.severity).toBe(VulnerabilitySeverity.CRITICAL);
     });
@@ -715,9 +712,9 @@ describe('ContractAnalyzer', () => {
 
       const result = await analyzer.analyzeContract(request);
 
-      expect(result.recommendations.some(r =>
-        r.includes('DELEGATECALL') && r.includes('immutable')
-      )).toBe(true);
+      expect(
+        result.recommendations.some((r) => r.includes('DELEGATECALL') && r.includes('immutable'))
+      ).toBe(true);
     });
   });
 });

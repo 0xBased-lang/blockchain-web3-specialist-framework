@@ -17,7 +17,11 @@ import {
   VulnerabilityCategory,
   VulnerabilitySeverity,
 } from '../../src/types/contract.js';
-import { type SimulationResult, SimulationStatus, SimulationProvider } from '../../src/types/simulation.js';
+import {
+  type SimulationResult,
+  SimulationStatus,
+  SimulationProvider,
+} from '../../src/types/simulation.js';
 import { TransactionType } from '../../src/types/transaction.js';
 
 describe('Security Pipeline Integration', () => {
@@ -485,9 +489,7 @@ describe('Security Pipeline Integration', () => {
       expect(result.risk.issues.length).toBeGreaterThan(0);
 
       // Verify contract analysis findings are included
-      const contractIssues = result.risk.issues.filter((i) =>
-        i.description.includes('[Contract]')
-      );
+      const contractIssues = result.risk.issues.filter((i) => i.description.includes('[Contract]'));
       expect(contractIssues.length).toBeGreaterThan(0);
     });
 
@@ -879,10 +881,7 @@ describe('Security Pipeline Integration', () => {
         },
         riskLevel: 'medium',
         isKnownMalicious: false,
-        recommendations: [
-          '⚠️ Medium-risk findings detected',
-          'Review findings before proceeding',
-        ],
+        recommendations: ['⚠️ Medium-risk findings detected', 'Review findings before proceeding'],
       };
 
       // Mock simulation with warnings

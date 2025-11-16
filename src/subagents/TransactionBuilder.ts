@@ -37,8 +37,17 @@ import {
 import { NonceManager } from './NonceManager.js';
 import { TransactionSimulator } from './TransactionSimulator.js';
 import { ContractAnalyzer } from './ContractAnalyzer.js';
-import { SimulationStatus, SimulationProvider, type SimulationResult, type RiskAssessment } from '../types/simulation.js';
-import { type ContractAnalysisResult, VulnerabilitySeverity, VulnerabilityCategory } from '../types/contract.js';
+import {
+  SimulationStatus,
+  SimulationProvider,
+  type SimulationResult,
+  type RiskAssessment,
+} from '../types/simulation.js';
+import {
+  type ContractAnalysisResult,
+  VulnerabilitySeverity,
+  VulnerabilityCategory,
+} from '../types/contract.js';
 import { logger } from '../utils/index.js';
 
 /**
@@ -61,7 +70,9 @@ export interface TransactionBuilderConfig {
  * nonce management, and safety checks.
  */
 export class TransactionBuilder {
-  private readonly config: Required<Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>> & {
+  private readonly config: Required<
+    Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>
+  > & {
     enableSimulation?: boolean;
     enableContractAnalysis?: boolean;
   };
@@ -86,7 +97,9 @@ export class TransactionBuilder {
       (baseConfig as any).solanaConnection = config.solanaConnection;
     }
 
-    this.config = baseConfig as Required<Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>> & {
+    this.config = baseConfig as Required<
+      Omit<TransactionBuilderConfig, 'enableSimulation' | 'enableContractAnalysis'>
+    > & {
       enableSimulation?: boolean;
       enableContractAnalysis?: boolean;
     };
@@ -100,25 +113,31 @@ export class TransactionBuilder {
     }
 
     if (config.ethereumProvider !== undefined) {
-      (this as unknown as { ethereumProvider: JsonRpcProvider }).ethereumProvider = config.ethereumProvider;
+      (this as unknown as { ethereumProvider: JsonRpcProvider }).ethereumProvider =
+        config.ethereumProvider;
       // Initialize NonceManager
-      (this as unknown as { nonceManager: NonceManager }).nonceManager = new NonceManager(config.ethereumProvider);
+      (this as unknown as { nonceManager: NonceManager }).nonceManager = new NonceManager(
+        config.ethereumProvider
+      );
 
       // Initialize Simulator if enabled
       if (this.config.enableSimulation) {
-        (this as unknown as { simulator: TransactionSimulator }).simulator = new TransactionSimulator(config.ethereumProvider);
+        (this as unknown as { simulator: TransactionSimulator }).simulator =
+          new TransactionSimulator(config.ethereumProvider);
       }
 
       // Initialize ContractAnalyzer if enabled
       if (this.config.enableContractAnalysis) {
-        (this as unknown as { contractAnalyzer: ContractAnalyzer }).contractAnalyzer = new ContractAnalyzer({
-          ethereumProvider: config.ethereumProvider,
-        });
+        (this as unknown as { contractAnalyzer: ContractAnalyzer }).contractAnalyzer =
+          new ContractAnalyzer({
+            ethereumProvider: config.ethereumProvider,
+          });
       }
     }
 
     if (config.solanaConnection !== undefined) {
-      (this as unknown as { solanaConnection: Connection }).solanaConnection = config.solanaConnection;
+      (this as unknown as { solanaConnection: Connection }).solanaConnection =
+        config.solanaConnection;
     }
 
     logger.info('TransactionBuilder initialized', {
@@ -162,7 +181,9 @@ export class TransactionBuilder {
    * @param params - Ethereum transaction parameters
    * @returns Gas estimation with safety margin
    */
-  async estimateGas(params: EthereumTransactionParams): Promise<GasEstimation & { isLegacy?: boolean }> {
+  async estimateGas(
+    params: EthereumTransactionParams
+  ): Promise<GasEstimation & { isLegacy?: boolean }> {
     if (!this.ethereumProvider) {
       throw new TransactionError(
         'Ethereum provider not configured',
@@ -398,9 +419,7 @@ export class TransactionBuilder {
    * @param params - Solana transaction parameters
    * @returns Built Solana transaction
    */
-  private async buildSolanaTransaction(
-    params: SolanaTransactionParams
-  ): Promise<BuiltTransaction> {
+  private async buildSolanaTransaction(params: SolanaTransactionParams): Promise<BuiltTransaction> {
     if (!this.solanaConnection) {
       throw new TransactionError(
         'Solana connection not configured',
@@ -530,9 +549,7 @@ export class TransactionBuilder {
    * @returns Built transaction with simulation, contract analysis, and combined risk assessment
    * @throws TransactionError if critical security issues detected
    */
-  async buildAndSimulate(
-    params: TransactionParams
-  ): Promise<{
+  async buildAndSimulate(params: TransactionParams): Promise<{
     transaction: BuiltTransaction;
     simulation: SimulationResult;
     risk: RiskAssessment;
@@ -619,7 +636,9 @@ export class TransactionBuilder {
           logger.error('CRITICAL: Contract analysis detected critical vulnerabilities', {
             contract: params.to,
             criticalFindings: contractAnalysis.summary.criticalCount,
-            findings: contractAnalysis.findings.filter((f) => f.severity === VulnerabilitySeverity.CRITICAL),
+            findings: contractAnalysis.findings.filter(
+              (f) => f.severity === VulnerabilitySeverity.CRITICAL
+            ),
           });
           throw error;
         }
@@ -669,20 +688,21 @@ export class TransactionBuilder {
     if (typeof params.data === 'string') {
       simulationRequest.data = params.data;
     }
-    if ((params as EthereumTransactionParams).gasLimit !== undefined) {
-      simulationRequest.gasLimit = (params as EthereumTransactionParams).gasLimit;
+    if (params.gasLimit !== undefined) {
+      simulationRequest.gasLimit = params.gasLimit;
     }
-    if ((params as EthereumTransactionParams).gasPrice !== undefined) {
-      simulationRequest.gasPrice = (params as EthereumTransactionParams).gasPrice;
+    if (params.gasPrice !== undefined) {
+      simulationRequest.gasPrice = params.gasPrice;
     }
-    if ((params as EthereumTransactionParams).maxFeePerGas !== undefined) {
-      simulationRequest.maxFeePerGas = (params as EthereumTransactionParams).maxFeePerGas;
+    if (params.maxFeePerGas !== undefined) {
+      simulationRequest.maxFeePerGas = params.maxFeePerGas;
     }
-    if ((params as EthereumTransactionParams).maxPriorityFeePerGas !== undefined) {
-      simulationRequest.maxPriorityFeePerGas = (params as EthereumTransactionParams).maxPriorityFeePerGas;
+    if (params.maxPriorityFeePerGas !== undefined) {
+      simulationRequest.maxPriorityFeePerGas = params.maxPriorityFeePerGas;
     }
 
-    const { result: simulation, risk } = await this.simulator.simulateWithRiskAssessment(simulationRequest);
+    const { result: simulation, risk } =
+      await this.simulator.simulateWithRiskAssessment(simulationRequest);
 
     // Check risk level
     if (risk.level === 'critical') {
@@ -707,11 +727,15 @@ export class TransactionBuilder {
       // Merge warnings from both analyses
       const combinedWarnings = [
         ...risk.warnings,
-        ...contractAnalysis.recommendations.filter(r => r.includes('⚠️') || r.includes('WARNING')),
+        ...contractAnalysis.recommendations.filter(
+          (r) => r.includes('⚠️') || r.includes('WARNING')
+        ),
       ];
 
       // Merge issues from both (map vulnerability category to risk category)
-      const mapVulnerabilityCategory = (cat: VulnerabilityCategory): RiskAssessment['issues'][number]['category'] => {
+      const mapVulnerabilityCategory = (
+        cat: VulnerabilityCategory
+      ): RiskAssessment['issues'][number]['category'] => {
         switch (cat) {
           case VulnerabilityCategory.REENTRANCY:
             return 'reentrancy';
@@ -732,10 +756,15 @@ export class TransactionBuilder {
 
       const combinedIssues = [
         ...risk.issues,
-        ...contractAnalysis.findings.map(f => ({
-          severity: f.severity === VulnerabilitySeverity.CRITICAL ? 'critical' as const :
-                   f.severity === VulnerabilitySeverity.HIGH ? 'error' as const :
-                   f.severity === VulnerabilitySeverity.MEDIUM ? 'warning' as const : 'info' as const,
+        ...contractAnalysis.findings.map((f) => ({
+          severity:
+            f.severity === VulnerabilitySeverity.CRITICAL
+              ? ('critical' as const)
+              : f.severity === VulnerabilitySeverity.HIGH
+                ? ('error' as const)
+                : f.severity === VulnerabilitySeverity.MEDIUM
+                  ? ('warning' as const)
+                  : ('info' as const),
           category: mapVulnerabilityCategory(f.category),
           description: `[Contract] ${f.title}: ${f.description}`,
           mitigation: f.recommendation,
@@ -746,12 +775,14 @@ export class TransactionBuilder {
       const riskLevels = ['low', 'medium', 'high', 'critical'];
       const simulationRiskIndex = riskLevels.indexOf(risk.level);
       const contractRiskIndex = riskLevels.indexOf(contractAnalysis.riskLevel);
-      const combinedRiskLevel = riskLevels[Math.max(simulationRiskIndex, contractRiskIndex)] as RiskAssessment['level'];
+      const combinedRiskLevel = riskLevels[
+        Math.max(simulationRiskIndex, contractRiskIndex)
+      ] as RiskAssessment['level'];
 
       // Merge recommendations
       const combinedRecommendations = [
         ...risk.recommendations,
-        ...contractAnalysis.recommendations.filter(r => !r.includes('✅')), // Exclude "safe" messages
+        ...contractAnalysis.recommendations.filter((r) => !r.includes('✅')), // Exclude "safe" messages
       ];
 
       combinedRisk = {

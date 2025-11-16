@@ -6,7 +6,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JsonRpcProvider, parseUnits } from 'ethers';
-import { GasOptimizer, GasStrategy, type GasPriceSource } from '../../../src/subagents/GasOptimizer.js';
+import {
+  GasOptimizer,
+  GasStrategy,
+  type GasPriceSource,
+} from '../../../src/subagents/GasOptimizer.js';
 
 describe('GasOptimizer', () => {
   let provider: JsonRpcProvider;

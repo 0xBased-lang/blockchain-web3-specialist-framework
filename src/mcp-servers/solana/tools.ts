@@ -82,11 +82,9 @@ export class SolanaToolManager {
       });
     } catch (error) {
       logger.error('Failed to initialize keypair', { error: String(error) });
-      throw new SolanaError(
-        'Invalid private key format',
-        SolanaErrorCode.INVALID_ADDRESS,
-        { error: String(error) }
-      );
+      throw new SolanaError('Invalid private key format', SolanaErrorCode.INVALID_ADDRESS, {
+        error: String(error),
+      });
     }
   }
 
@@ -126,20 +124,12 @@ export class SolanaToolManager {
           const ata = await getAssociatedTokenAddress(mintPubkey, ownerPubkey);
 
           // Get token account info
-          const tokenAccount = await getAccount(
-            this.provider.getConnection(),
-            ata,
-            commitment
-          );
+          const tokenAccount = await getAccount(this.provider.getConnection(), ata, commitment);
 
           balance = tokenAccount.amount;
 
           // Get token metadata
-          const mintInfo = await getMint(
-            this.provider.getConnection(),
-            mintPubkey,
-            commitment
-          );
+          const mintInfo = await getMint(this.provider.getConnection(), mintPubkey, commitment);
 
           decimals = mintInfo.decimals;
           // Symbol would come from token metadata (not implemented here)
@@ -264,11 +254,11 @@ export class SolanaToolManager {
       if (error instanceof SolanaError) {
         throw error;
       }
-      throw new SolanaError(
-        'Transaction failed',
-        SolanaErrorCode.TRANSACTION_FAILED,
-        { to, amount: amount.toString(), error: String(error) }
-      );
+      throw new SolanaError('Transaction failed', SolanaErrorCode.TRANSACTION_FAILED, {
+        to,
+        amount: amount.toString(),
+        error: String(error),
+      });
     }
   }
 
@@ -298,9 +288,8 @@ export class SolanaToolManager {
       const destAta = await getAssociatedTokenAddress(mintPubkey, toPubkey);
 
       // Get recent blockhash
-      const { blockhash, lastValidBlockHeight } = await this.provider.getRecentBlockhash(
-        'confirmed'
-      );
+      const { blockhash, lastValidBlockHeight } =
+        await this.provider.getRecentBlockhash('confirmed');
 
       // Create transaction
       const transaction = new Transaction({
@@ -373,11 +362,12 @@ export class SolanaToolManager {
       if (error instanceof SolanaError) {
         throw error;
       }
-      throw new SolanaError(
-        'Token transfer failed',
-        SolanaErrorCode.TRANSACTION_FAILED,
-        { to, mint, amount: amount.toString(), error: String(error) }
-      );
+      throw new SolanaError('Token transfer failed', SolanaErrorCode.TRANSACTION_FAILED, {
+        to,
+        mint,
+        amount: amount.toString(),
+        error: String(error),
+      });
     }
   }
 
@@ -389,9 +379,8 @@ export class SolanaToolManager {
    */
   async getRecentBlockhash(): Promise<RecentBlockhashResponse> {
     try {
-      const { blockhash, lastValidBlockHeight } = await this.provider.getRecentBlockhash(
-        'confirmed'
-      );
+      const { blockhash, lastValidBlockHeight } =
+        await this.provider.getRecentBlockhash('confirmed');
 
       logger.debug('Recent blockhash fetched', { blockhash, lastValidBlockHeight });
 
@@ -401,11 +390,9 @@ export class SolanaToolManager {
       };
     } catch (error) {
       logger.error('Failed to get recent blockhash', { error });
-      throw new SolanaError(
-        'Failed to fetch recent blockhash',
-        SolanaErrorCode.NETWORK_ERROR,
-        { error: String(error) }
-      );
+      throw new SolanaError('Failed to fetch recent blockhash', SolanaErrorCode.NETWORK_ERROR, {
+        error: String(error),
+      });
     }
   }
 
@@ -440,11 +427,11 @@ export class SolanaToolManager {
       };
     } catch (error) {
       logger.error('Failed to request airdrop', { address, lamports: lamports.toString(), error });
-      throw new SolanaError(
-        'Airdrop failed',
-        SolanaErrorCode.NETWORK_ERROR,
-        { address, lamports: lamports.toString(), error: String(error) }
-      );
+      throw new SolanaError('Airdrop failed', SolanaErrorCode.NETWORK_ERROR, {
+        address,
+        lamports: lamports.toString(),
+        error: String(error),
+      });
     }
   }
 
@@ -469,11 +456,12 @@ export class SolanaToolManager {
       if (error instanceof SolanaError) {
         throw error;
       }
-      throw new SolanaError(
-        'Transaction confirmation failed',
-        SolanaErrorCode.TIMEOUT,
-        { signature, commitment, timeout, error: String(error) }
-      );
+      throw new SolanaError('Transaction confirmation failed', SolanaErrorCode.TIMEOUT, {
+        signature,
+        commitment,
+        timeout,
+        error: String(error),
+      });
     }
   }
 }

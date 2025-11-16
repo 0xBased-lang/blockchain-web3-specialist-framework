@@ -129,8 +129,7 @@ export class MultiChainToolManager {
           properties: {
             address: {
               type: 'string',
-              description:
-                'Account address (0x... for Ethereum, Base58 for Solana)',
+              description: 'Account address (0x... for Ethereum, Base58 for Solana)',
             },
             chain: {
               type: 'string',
@@ -139,8 +138,7 @@ export class MultiChainToolManager {
             },
             token: {
               type: 'string',
-              description:
-                'Token contract address (ERC20) or mint address (SPL)',
+              description: 'Token contract address (ERC20) or mint address (SPL)',
             },
             commitment: {
               type: 'string',
@@ -210,8 +208,7 @@ export class MultiChainToolManager {
             },
             token: {
               type: 'string',
-              description:
-                'Token contract address (ERC20) or mint address (SPL)',
+              description: 'Token contract address (ERC20) or mint address (SPL)',
             },
             decimals: {
               type: 'number',
@@ -562,7 +559,9 @@ export class MultiChainToolManager {
   async executeTool(
     name: string,
     params: unknown
-  ): Promise<UnifiedBalanceResponse | UnifiedTransactionResponse | { success: boolean; message: string }> {
+  ): Promise<
+    UnifiedBalanceResponse | UnifiedTransactionResponse | { success: boolean; message: string }
+  > {
     logger.info('Executing multi-chain tool', { name });
 
     switch (name) {

@@ -46,8 +46,7 @@ describe('Ethereum Types', () => {
 
   describe('TxHashSchema', () => {
     it('should validate correct transaction hashes', () => {
-      const validHash =
-        '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      const validHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
       const result = TxHashSchema.safeParse(validHash);
       expect(result.success).toBe(true);
     });
@@ -171,11 +170,10 @@ describe('Ethereum Types', () => {
 
   describe('EthereumError', () => {
     it('should create custom errors with code and details', () => {
-      const error = new EthereumError(
-        'Insufficient funds',
-        EthereumErrorCode.INSUFFICIENT_FUNDS,
-        { balance: '0', required: '1000000000000000000' }
-      );
+      const error = new EthereumError('Insufficient funds', EthereumErrorCode.INSUFFICIENT_FUNDS, {
+        balance: '0',
+        required: '1000000000000000000',
+      });
 
       expect(error.message).toBe('Insufficient funds');
       expect(error.code).toBe(EthereumErrorCode.INSUFFICIENT_FUNDS);

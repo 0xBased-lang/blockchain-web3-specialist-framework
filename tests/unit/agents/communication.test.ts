@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  MessageQueue,
-  createMessage,
-  createResponse,
-} from '../../../src/agents/communication.js';
+import { MessageQueue, createMessage, createResponse } from '../../../src/agents/communication.js';
 import { type MessageHandler } from '../../../src/types/agent.js';
 
 describe('MessageQueue', () => {
@@ -165,18 +161,14 @@ describe('MessageQueue', () => {
       expect(response.data).toBe('response data');
     });
 
-    it(
-      'should timeout when no response received',
-      async () => {
-        const message = createMessage('agent1', 'agent2', 'request', { data: 'test' });
+    it('should timeout when no response received', async () => {
+      const message = createMessage('agent1', 'agent2', 'request', { data: 'test' });
 
-        const response = await queue.send('agent2', message, 500);
+      const response = await queue.send('agent2', message, 500);
 
-        expect(response.success).toBe(false);
-        expect(response.error).toContain('timed out');
-      },
-      10000
-    ); // 10 second test timeout
+      expect(response.success).toBe(false);
+      expect(response.error).toContain('timed out');
+    }, 10000); // 10 second test timeout
   });
 
   describe('Broadcasting', () => {
