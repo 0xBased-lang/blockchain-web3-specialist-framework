@@ -43,3 +43,12 @@ export interface BaseConfig {
   rpcUrl?: string;
   apiKey?: string;
 }
+
+/**
+ * Re-export all types
+ */
+export * from './agent.js';
+export * from './transaction.js';
+export * from './wallet.js';
+export * from './simulation.js';
+export * from './contract.js';
