@@ -24,8 +24,8 @@ export default defineConfig({
         statements: 80,
       },
     },
-    include: ['tests/unit/**/*.test.ts'],
-    exclude: ['node_modules', 'dist', 'tests/integration', 'tests/e2e'],
+    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    exclude: ['node_modules', 'dist', 'tests/e2e'],
   },
   resolve: {
     alias: {
