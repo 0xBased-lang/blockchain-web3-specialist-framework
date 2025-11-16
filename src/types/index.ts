@@ -52,3 +52,4 @@ export * from './transaction.js';
 export * from './wallet.js';
 export * from './simulation.js';
 export * from './contract.js';
+export * from './oracle.js';
