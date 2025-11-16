@@ -12,7 +12,7 @@ import { EthereumProvider } from './provider.js';
 import { EthereumResourceManager } from './resources.js';
 import { EthereumToolManager } from './tools.js';
 import { logger } from '../../utils/index.js';
-import type { Address, TxHash } from './types.js';
+import type { Address } from './types.js';
 
 /**
  * Ethereum MCP Server
