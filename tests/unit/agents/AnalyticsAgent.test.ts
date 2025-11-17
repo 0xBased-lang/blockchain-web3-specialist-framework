@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnalyticsAgent } from '../../../src/agents/AnalyticsAgent.js';
+import type { AnalyticsProviders } from '../../../src/agents/AnalyticsAgent.js';
 import type { AgentConfig } from '../../../src/types/agent.js';
 import type {
-  AnalyticsProviders,
+  
   PortfolioParams,
   TransactionAnalysisParams,
   GasAnalysisParams,
@@ -62,7 +63,6 @@ describe('AnalyticsAgent', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0xWallet',
         chain: 'ethereum',
-        startBlock: 1000000,
         endBlock: 2000000,
       };
 
@@ -77,7 +77,6 @@ describe('AnalyticsAgent', () => {
       const gasParams: GasAnalysisParams = {
         address: '0xWallet',
         chain: 'ethereum',
-        startBlock: 1000000,
         endBlock: 2000000,
       };
 
@@ -92,7 +91,6 @@ describe('AnalyticsAgent', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1h',
         startTime: Date.now() - 86400000,
         endTime: Date.now(),
       };

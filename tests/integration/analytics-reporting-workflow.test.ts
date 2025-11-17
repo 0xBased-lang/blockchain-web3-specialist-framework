@@ -12,9 +12,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JsonRpcProvider } from 'ethers';
 import { AnalyticsAgent } from '../../src/agents/AnalyticsAgent.js';
+import type { AnalyticsProviders } from '../../src/agents/AnalyticsAgent.js';
 import type { AgentConfig } from '../../src/types/agent.js';
 import type {
-  AnalyticsProviders,
   PortfolioParams,
   TransactionAnalysisParams,
   GasAnalysisParams,
@@ -197,7 +197,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -222,7 +221,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -239,7 +237,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -273,7 +270,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -297,7 +293,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -317,7 +312,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -351,7 +345,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1h',
         startTime: Date.now() - 86400000, // 24 hours ago
         endTime: Date.now(),
       };
@@ -376,7 +369,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1d',
         startTime: Date.now() - 86400000 * 30, // 30 days
         endTime: Date.now(),
       };
@@ -508,7 +500,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1d',
         startTime: Date.now() - 86400000 * 30,
         endTime: Date.now(),
       };
@@ -544,7 +535,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       };
 
@@ -560,7 +550,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const invalidPriceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1h',
         startTime: Date.now(), // Start after end
         endTime: Date.now() - 86400000,
       };
@@ -580,7 +569,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        interval: '1h',
         startTime: Date.now() - 3600000,
         endTime: Date.now(),
       };
@@ -606,14 +594,12 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txAnalysis = await agent.analyzeTransactions({
         address,
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       });
 
       const gasAnalysis = await agent.analyzeGasUsage({
         address,
         chain: 'ethereum',
-        startBlock: 17000000,
         endBlock: 18000000,
       });
 

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeFiAgent } from '../../../src/agents/DeFiAgent.js';
+import type { DeFiProviders } from '../../../src/agents/DeFiAgent.js';
 import type { AgentConfig } from '../../../src/types/agent.js';
 import type {
-  DeFiProviders,
+  
   SwapParams,
   LiquidityParams,
 } from '../../../src/types/specialized-agents.js';
@@ -47,11 +48,11 @@ describe('DeFiAgent', () => {
   describe('executeSwap', () => {
     it('should handle swap request', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xTokenA',
+        fromToken: '0xTokenA',
         tokenOut: '0xTokenB',
         amountIn: '1000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 60000,
       };
 
@@ -64,11 +65,11 @@ describe('DeFiAgent', () => {
 
     it('should return error on swap failure', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xInvalid',
+        fromToken: '0xInvalid',
         tokenOut: '0xTokenB',
         amountIn: '0',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 60000,
       };
 
@@ -88,7 +89,7 @@ describe('DeFiAgent', () => {
         amount0: '1000000',
         amount1: '2000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 60000,
       };
 
@@ -107,9 +108,8 @@ describe('DeFiAgent', () => {
         token1: '0xTokenB',
         amount0: '0',
         amount1: '0',
-        liquidity: '500000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 60000,
       };
 
@@ -126,11 +126,11 @@ describe('DeFiAgent', () => {
         id: 'task-1',
         type: 'defi_swap',
         params: {
-          tokenIn: '0xTokenA',
+          fromToken: '0xTokenA',
           tokenOut: '0xTokenB',
           amountIn: '1000000',
           chain: 'ethereum',
-          slippageTolerance: 0.5,
+          slippage: 0.5,
         } as unknown as Record<string, unknown>,
         priority: 1,
       };

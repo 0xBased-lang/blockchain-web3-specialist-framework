@@ -9,10 +9,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { JsonRpcProvider, Contract } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 import { DeFiAgent } from '../../src/agents/DeFiAgent.js';
+import type { DeFiProviders } from '../../src/agents/DeFiAgent.js';
 import type { AgentConfig } from '../../src/types/agent.js';
-import type { DeFiProviders, SwapParams, LiquidityParams } from '../../src/types/specialized-agents.js';
+import type { SwapParams, LiquidityParams } from '../../src/types/specialized-agents.js';
 
 describe('DeFi Swap Workflow E2E', () => {
   let agent: DeFiAgent;
@@ -55,11 +56,11 @@ describe('DeFi Swap Workflow E2E', () => {
   describe('Complete Swap Workflow', () => {
     it('should execute full swap: plan → execute → validate', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
         amountIn: '1000000000000000000', // 1 WETH
         chain: 'ethereum',
-        slippageTolerance: 0.5, // 0.5%
+        slippage: 0.5, // 0.5%
         deadline: Date.now() + 300000, // 5 minutes
       };
 
@@ -98,11 +99,11 @@ describe('DeFi Swap Workflow E2E', () => {
 
     it('should handle swap with token approval workflow', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+        fromToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
         amountIn: '1000000000000000000000', // 1000 DAI
         chain: 'ethereum',
-        slippageTolerance: 1.0,
+        slippage: 1.0,
         deadline: Date.now() + 600000,
       };
 
@@ -118,11 +119,11 @@ describe('DeFi Swap Workflow E2E', () => {
 
     it('should reject swap with excessive slippage', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.1, // Very tight 0.1%
+        slippage: 0.1, // Very tight 0.1%
         deadline: Date.now() + 300000,
       };
 
@@ -140,11 +141,11 @@ describe('DeFi Swap Workflow E2E', () => {
 
     it('should handle expired deadline', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() - 1000, // Already expired
       };
 
@@ -157,7 +158,6 @@ describe('DeFi Swap Workflow E2E', () => {
   });
 
   describe('Liquidity Provision Workflow', () => {
-    it('should execute add liquidity: plan → execute → validate', async () => {
       const liquidityParams: LiquidityParams = {
         poolAddress: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640', // USDC/ETH Pool
         token0: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
@@ -165,7 +165,7 @@ describe('DeFi Swap Workflow E2E', () => {
         amount0: '1000000000', // 1000 USDC
         amount1: '500000000000000000', // 0.5 WETH
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -199,9 +199,8 @@ describe('DeFi Swap Workflow E2E', () => {
         token1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         amount0: '0',
         amount1: '0',
-        liquidity: '1000000000000000000', // 1 LP token
         chain: 'ethereum',
-        slippageTolerance: 1.0,
+        slippage: 1.0,
         deadline: Date.now() + 300000,
       };
 
@@ -220,7 +219,7 @@ describe('DeFi Swap Workflow E2E', () => {
         amount0: '2000000000', // 2000 USDC
         amount1: '1000000000000000000', // 1 WETH (matches 2000:1 ratio)
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -240,11 +239,11 @@ describe('DeFi Swap Workflow E2E', () => {
   describe('Multi-DEX Price Comparison', () => {
     it('should compare prices across multiple DEXes', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -272,11 +271,11 @@ describe('DeFi Swap Workflow E2E', () => {
       mockProvider.getBalance = vi.fn().mockResolvedValue(1000000000000000n); // 0.001 ETH
 
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '10000000000000000000', // 10 ETH (more than balance)
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -290,11 +289,11 @@ describe('DeFi Swap Workflow E2E', () => {
 
     it('should handle invalid token addresses', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0x0000000000000000000000000000000000000000', // Invalid
+        fromToken: '0x0000000000000000000000000000000000000000', // Invalid
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -309,11 +308,11 @@ describe('DeFi Swap Workflow E2E', () => {
       mockProvider.call = vi.fn().mockRejectedValue(new Error('Network error'));
 
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
@@ -330,11 +329,11 @@ describe('DeFi Swap Workflow E2E', () => {
   describe('Gas Optimization', () => {
     it('should estimate and validate gas costs', async () => {
       const swapParams: SwapParams = {
-        tokenIn: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        fromToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         tokenOut: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         amountIn: '1000000000000000000',
         chain: 'ethereum',
-        slippageTolerance: 0.5,
+        slippage: 0.5,
         deadline: Date.now() + 300000,
       };
 
