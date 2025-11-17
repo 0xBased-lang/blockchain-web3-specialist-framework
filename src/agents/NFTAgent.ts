@@ -120,6 +120,13 @@ export class NFTAgent extends SpecializedAgentBase {
 
     this._walletManager = new WalletManager();
 
+    // Suppress unused variable warnings - kept for future use/debugging
+    void this._providers;
+    void this._nftConfig;
+    void this._txBuilder;
+    void this._contractAnalyzer;
+    void this._walletManager;
+
     // Initialize RPC batchers for each provider (only if URL can be extracted)
     if (providers.ethereum) {
       const url = getRpcUrl(providers.ethereum);

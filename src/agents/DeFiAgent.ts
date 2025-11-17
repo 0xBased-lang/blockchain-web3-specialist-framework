@@ -44,6 +44,7 @@ import type {
   DEXQuote,
   DeFiAgentConfig,
   DeFiTaskType,
+  DeFiProviders as DeFiProvidersBase,
 } from '../types/specialized-agents.js';
 import { logger } from '../utils/index.js';
 
@@ -65,7 +66,7 @@ function getRpcUrl(provider: JsonRpcProvider): string | undefined {
 }
 
 /**
- * Providers for DeFi operations
+ * DeFi Providers with proper typing (extends base from types)
  */
 export interface DeFiProviders {
   ethereum?: JsonRpcProvider;
@@ -138,6 +139,11 @@ export class DeFiAgent extends SpecializedAgentBase {
     this.priceOracle = new PriceOracle({}, primaryProvider);
 
     this._walletManager = new WalletManager();
+
+    // Suppress unused variable warnings - kept for future use/debugging
+    void this._txBuilder;
+    void this._simulator;
+    void this._walletManager;
 
     // Initialize RPC batchers for each provider (only if URL can be extracted)
     if (providers.ethereum) {

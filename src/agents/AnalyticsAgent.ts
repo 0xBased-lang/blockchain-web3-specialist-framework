@@ -98,6 +98,11 @@ export class AnalyticsAgent extends SpecializedAgentBase {
 
     this._priceOracle = new PriceOracle({}, primaryProvider);
 
+    // Suppress unused variable warnings - kept for future use/debugging
+    void this._providers;
+    void this._analyticsConfig;
+    void this._priceOracle;
+
     // Initialize RPC batchers for each provider
     if (providers.ethereum) {
       const url = getRpcUrl(providers.ethereum);

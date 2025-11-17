@@ -551,6 +551,42 @@ export interface AgentProviders {
 }
 
 /**
+ * DeFi-specific providers
+ */
+export interface DeFiProviders {
+  readonly ethereum?: unknown; // JsonRpcProvider
+  readonly polygon?: unknown; // JsonRpcProvider
+  readonly arbitrum?: unknown; // JsonRpcProvider
+  readonly optimism?: unknown; // JsonRpcProvider
+}
+
+/**
+ * NFT-specific providers
+ */
+export interface NFTProviders {
+  readonly ethereum?: unknown; // JsonRpcProvider
+  readonly polygon?: unknown; // JsonRpcProvider
+  readonly solana?: unknown; // Connection
+}
+
+/**
+ * Security-specific providers
+ */
+export interface SecurityProviders {
+  readonly ethereum?: unknown; // JsonRpcProvider
+  readonly polygon?: unknown; // JsonRpcProvider
+}
+
+/**
+ * Analytics-specific providers
+ */
+export interface AnalyticsProviders {
+  readonly ethereum?: unknown; // JsonRpcProvider
+  readonly polygon?: unknown; // JsonRpcProvider
+  readonly solana?: unknown; // Connection
+}
+
+/**
  * DeFi Agent specific config
  */
 export interface DeFiAgentConfig {

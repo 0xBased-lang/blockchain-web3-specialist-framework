@@ -100,6 +100,11 @@ export class SecurityAgent extends SpecializedAgentBase {
     this.contractAnalyzer = new ContractAnalyzer({ ethereumProvider: primaryProvider });
     this._simulator = new TransactionSimulator(primaryProvider);
 
+    // Suppress unused variable warnings - kept for future use/debugging
+    void this._providers;
+    void this._securityConfig;
+    void this._simulator;
+
     // Initialize RPC batchers for each provider (only if URL can be extracted)
     if (providers.ethereum) {
       const url = getRpcUrl(providers.ethereum);
