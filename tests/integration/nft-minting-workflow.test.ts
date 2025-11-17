@@ -239,7 +239,7 @@ describe('NFT Minting Workflow E2E', () => {
           { name: 'NFT #2', description: 'Second batch NFT', image: 'ipfs://QmBatch2...' },
           { name: 'NFT #3', description: 'Third batch NFT', image: 'ipfs://QmBatch3...' },
         ],
-        chain: 'ethereum',
+        chain: 'ethereum' as const,
       };
 
       const results = await agent.batchMint(batchParams);
@@ -403,7 +403,7 @@ describe('NFT Minting Workflow E2E', () => {
         if (stats) {
           expect(stats).toBeDefined();
           expect(stats.totalSupply).toBeGreaterThanOrEqual(0);
-          expect(stats.uniqueOwners).toBeGreaterThanOrEqual(0);
+          expect(stats.ownersCount).toBeGreaterThanOrEqual(0);
         }
       } catch (error) {
         // API may not be available
@@ -563,10 +563,12 @@ describe('NFT Minting Workflow E2E', () => {
       const plan = await agent.plan(task);
       const result = await agent.execute(plan);
 
-      if (result.success && result.data && 'gasEstimate' in result.data) {
-        const gasEstimate = result.data.gasEstimate as bigint;
-        expect(gasEstimate).toBeGreaterThan(50000n); // NFT minting requires more gas
-        expect(gasEstimate).toBeLessThan(1000000n); // Should be reasonable
+      if (result.success && result.data && typeof result.data === 'object') {
+        const data = result.data as { gasEstimate?: bigint };
+        if (data.gasEstimate) {
+          expect(data.gasEstimate).toBeGreaterThan(50000n); // NFT minting requires more gas
+          expect(data.gasEstimate).toBeLessThan(1000000n); // Should be reasonable
+        }
       }
     });
   });

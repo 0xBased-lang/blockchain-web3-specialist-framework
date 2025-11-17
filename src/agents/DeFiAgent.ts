@@ -44,7 +44,6 @@ import type {
   DEXQuote,
   DeFiAgentConfig,
   DeFiTaskType,
-  DeFiProviders,
 } from '../types/specialized-agents.js';
 import { logger } from '../utils/index.js';
 

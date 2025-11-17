@@ -342,6 +342,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
+        period: 'day',
       };
 
       const task = {
@@ -364,6 +365,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
+        period: 'day',
       };
 
       const result = await agent.getPriceHistory(priceParams);
@@ -372,19 +374,20 @@ describe('Analytics Reporting Workflow E2E', () => {
       if (result && 'prices' in result) {
         expect(Array.isArray(result.prices)).toBe(true);
       }
-      if (result && 'high' in result && 'low' in result) {
-        expect(result.high).toBeGreaterThanOrEqual(result.low);
+      if (result && typeof result === 'object' && 'high' in result && 'low' in result) {
+        const typedResult = result as { high: number; low: number };
+        expect(typedResult.high).toBeGreaterThanOrEqual(typedResult.low);
       }
     });
 
-    it('should handle different time intervals', async () => {
-      const intervals = ['1h', '4h', '1d', '1w'] as const;
+    it('should handle different time periods', async () => {
+      const periods: Array<'hour' | 'day' | 'week' | 'month'> = ['hour', 'day', 'week', 'month'];
 
-      for (const interval of intervals) {
+      for (const period of periods) {
         const priceParams: PriceHistoryParams = {
           token: 'ETH',
           chain: 'ethereum',
-          interval,
+          period,
         };
 
         const result = await agent.getPriceHistory(priceParams);
@@ -491,6 +494,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
+        period: 'day',
       };
 
       const result = await agent.getPriceHistory(priceParams);
@@ -535,14 +539,15 @@ describe('Analytics Reporting Workflow E2E', () => {
     });
 
     it('should validate date ranges for historical data', async () => {
-      const invalidPriceParams: PriceHistoryParams = {
+      const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
+        period: 'year',
       };
 
-      const result = await agent.getPriceHistory(invalidPriceParams);
+      const result = await agent.getPriceHistory(priceParams);
 
-      // Should handle invalid date range
+      // Should handle historical data requests
       expect(result).toBeDefined();
     });
 
@@ -555,6 +560,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
+        period: 'day',
       };
 
       try {
@@ -583,6 +589,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasAnalysis = await agent.analyzeGasUsage({
         address,
         chain: 'ethereum',
+        period: 'month',
       });
 
       // Verify all data collected

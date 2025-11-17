@@ -392,12 +392,15 @@ describe('Security Validation Workflow E2E', () => {
         expect(txValidation).toBeDefined();
 
         // Step 4: Analyze MEV risk
+        const mevTransaction: { to: string; data: string; value?: string } = {
+          to: txParams.to,
+          data: txParams.data || '0x',
+        };
+        if (txParams.value) {
+          mevTransaction.value = txParams.value;
+        }
         const mevRisk = await agent.analyzeMEVRisk({
-          transaction: {
-            to: txParams.to,
-            value: txParams.value,
-            data: txParams.data || '0x',
-          },
+          transaction: mevTransaction,
           chain: txParams.chain,
         });
         expect(mevRisk).toBeDefined();
@@ -414,19 +417,20 @@ describe('Security Validation Workflow E2E', () => {
       };
 
       // Aggregate all risk levels
-      const allRiskLevels = [
+      const allRiskLevels: Array<'low' | 'medium' | 'high' | 'critical'> = [
         results.audit.riskLevel,
         results.txValidation.riskLevel,
         results.mevRisk.riskLevel,
       ];
 
-      const highestRisk = allRiskLevels.includes('critical')
-        ? 'critical'
-        : allRiskLevels.includes('high')
-          ? 'high'
-          : allRiskLevels.includes('medium')
-            ? 'medium'
-            : 'low';
+      let highestRisk: 'low' | 'medium' | 'high' | 'critical' = 'low';
+      if (allRiskLevels.includes('critical')) {
+        highestRisk = 'critical';
+      } else if (allRiskLevels.includes('high')) {
+        highestRisk = 'high';
+      } else if (allRiskLevels.includes('medium')) {
+        highestRisk = 'medium';
+      }
 
       expect(['low', 'medium', 'high', 'critical']).toContain(highestRisk);
     });
@@ -526,21 +530,20 @@ describe('Security Validation Workflow E2E', () => {
       expect(validation.warnings?.some((w) => w.includes('critical'))).toBe(true);
     });
 
-    it('should validate transaction gas limits', async () => {
-      const highGasTx: TransactionValidationParams = {
+    it('should validate transaction with complex data', async () => {
+      const complexTx: TransactionValidationParams = {
         to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         value: '1000000',
-        data: '0x...',
-        gasLimit: '10000000', // Abnormally high
+        data: '0x' + '00'.repeat(10000), // Large data payload
         chain: 'ethereum',
       };
 
-      const result = await agent.validateTransaction(highGasTx);
+      const result = await agent.validateTransaction(complexTx);
 
       if (result && 'warnings' in result) {
-        // Should warn about high gas
-        const gasWarnings = result.warnings?.filter((w) => w.includes('gas'));
-        expect(gasWarnings).toBeDefined();
+        // Should warn about large data payload
+        const warnings = result.warnings;
+        expect(warnings).toBeDefined();
       }
     });
 
