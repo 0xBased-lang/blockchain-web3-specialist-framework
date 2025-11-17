@@ -48,6 +48,23 @@ import type {
 import { logger } from '../utils/index.js';
 
 /**
+ * Helper to safely extract RPC URL from provider
+ * Falls back to undefined if provider doesn't expose URL
+ */
+function getRpcUrl(provider: JsonRpcProvider): string | undefined {
+  try {
+    // Try to access _getConnection() if it exists (internal ethers method)
+    if ('_getConnection' in provider && typeof provider._getConnection === 'function') {
+      const conn = (provider as any)._getConnection();
+      return conn?.url;
+    }
+  } catch (err) {
+    // Ignore errors, just return undefined
+  }
+  return undefined;
+}
+
+/**
  * Providers for DeFi operations
  */
 export interface DeFiProviders {
@@ -122,34 +139,46 @@ export class DeFiAgent extends SpecializedAgentBase {
 
     this._walletManager = new WalletManager();
 
-    // Initialize RPC batchers for each provider
+    // Initialize RPC batchers for each provider (only if URL can be extracted)
     if (providers.ethereum) {
-      this.batchers.set('ethereum', new RPCBatcher(providers.ethereum._getConnection().url, {
-        maxBatchSize: 50, // Conservative for production
-        maxWaitTime: 10,
-        debug: false,
-      }));
+      const url = getRpcUrl(providers.ethereum);
+      if (url) {
+        this.batchers.set('ethereum', new RPCBatcher(url, {
+          maxBatchSize: 50, // Conservative for production
+          maxWaitTime: 10,
+          debug: false,
+        }));
+      }
     }
     if (providers.polygon) {
-      this.batchers.set('polygon', new RPCBatcher(providers.polygon._getConnection().url, {
-        maxBatchSize: 50,
-        maxWaitTime: 10,
-        debug: false,
-      }));
+      const url = getRpcUrl(providers.polygon);
+      if (url) {
+        this.batchers.set('polygon', new RPCBatcher(url, {
+          maxBatchSize: 50,
+          maxWaitTime: 10,
+          debug: false,
+        }));
+      }
     }
     if (providers.arbitrum) {
-      this.batchers.set('arbitrum', new RPCBatcher(providers.arbitrum._getConnection().url, {
-        maxBatchSize: 50,
-        maxWaitTime: 10,
-        debug: false,
-      }));
+      const url = getRpcUrl(providers.arbitrum);
+      if (url) {
+        this.batchers.set('arbitrum', new RPCBatcher(url, {
+          maxBatchSize: 50,
+          maxWaitTime: 10,
+          debug: false,
+        }));
+      }
     }
     if (providers.optimism) {
-      this.batchers.set('optimism', new RPCBatcher(providers.optimism._getConnection().url, {
-        maxBatchSize: 50,
-        maxWaitTime: 10,
-        debug: false,
-      }));
+      const url = getRpcUrl(providers.optimism);
+      if (url) {
+        this.batchers.set('optimism', new RPCBatcher(url, {
+          maxBatchSize: 50,
+          maxWaitTime: 10,
+          debug: false,
+        }));
+      }
     }
 
     logger.info('DeFiAgent initialized', {

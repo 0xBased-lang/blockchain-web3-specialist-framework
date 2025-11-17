@@ -34,7 +34,8 @@ describe('Utility Functions', () => {
     const start = Date.now();
     await sleep(100);
     const elapsed = Date.now() - start;
-    expect(elapsed).toBeGreaterThanOrEqual(100);
+    // Allow 1-2ms tolerance for timer resolution
+    expect(elapsed).toBeGreaterThanOrEqual(98);
     expect(elapsed).toBeLessThan(150);
   });
 
