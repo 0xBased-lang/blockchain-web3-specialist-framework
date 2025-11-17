@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SpecializedAgentBase } from '../../../src/agents/SpecializedAgentBase.js';
 import {
   type Task,
@@ -147,7 +147,7 @@ describe('SpecializedAgentBase', () => {
       expect(task.params).toEqual({ foo: 'bar' });
       expect(task.priority).toBe(5);
       expect(task.id).toContain('test-specialized-agent-1-test_task');
-      expect(task.metadata?.agentName).toBe('TestSpecializedAgent');
+      expect(task.metadata?.['agentName']).toBe('TestSpecializedAgent');
     });
 
     it('should use default priority of 1', () => {
@@ -349,7 +349,7 @@ describe('SpecializedAgentBase', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Step action_2 failed');
-      expect(result.metadata?.failedStep).toBe('step-2');
+      expect(result.metadata?.['failedStep']).toBe('step-2');
     });
 
     it('should handle step exceptions', async () => {

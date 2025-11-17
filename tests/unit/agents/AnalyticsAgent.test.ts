@@ -63,7 +63,6 @@ describe('AnalyticsAgent', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0xWallet',
         chain: 'ethereum',
-        endBlock: 2000000,
       };
 
       const result = await agent.analyzeTransactions(txParams);
@@ -77,7 +76,7 @@ describe('AnalyticsAgent', () => {
       const gasParams: GasAnalysisParams = {
         address: '0xWallet',
         chain: 'ethereum',
-        endBlock: 2000000,
+        period: 'month',
       };
 
       const result = await agent.analyzeGasUsage(gasParams);
@@ -91,8 +90,7 @@ describe('AnalyticsAgent', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now() - 86400000,
-        endTime: Date.now(),
+        period: 'day',
       };
 
       const result = await agent.getPriceHistory(priceParams);

@@ -49,11 +49,10 @@ describe('DeFiAgent', () => {
     it('should handle swap request', async () => {
       const swapParams: SwapParams = {
         fromToken: '0xTokenA',
-        tokenOut: '0xTokenB',
-        amountIn: '1000000',
+        toToken: '0xTokenB',
+        amount: '1000000',
         chain: 'ethereum',
         slippage: 0.5,
-        deadline: Date.now() + 60000,
       };
 
       // Mock will execute the plan which will return success
@@ -66,11 +65,10 @@ describe('DeFiAgent', () => {
     it('should return error on swap failure', async () => {
       const swapParams: SwapParams = {
         fromToken: '0xInvalid',
-        tokenOut: '0xTokenB',
-        amountIn: '0',
+        toToken: '0xTokenB',
+        amount: '0',
         chain: 'ethereum',
         slippage: 0.5,
-        deadline: Date.now() + 60000,
       };
 
       const result = await agent.executeSwap(swapParams);
@@ -90,7 +88,6 @@ describe('DeFiAgent', () => {
         amount1: '2000000',
         chain: 'ethereum',
         slippage: 0.5,
-        deadline: Date.now() + 60000,
       };
 
       const result = await agent.addLiquidity(liquidityParams);
@@ -110,7 +107,6 @@ describe('DeFiAgent', () => {
         amount1: '0',
         chain: 'ethereum',
         slippage: 0.5,
-        deadline: Date.now() + 60000,
       };
 
       const result = await agent.removeLiquidity(liquidityParams);
@@ -127,8 +123,8 @@ describe('DeFiAgent', () => {
         type: 'defi_swap',
         params: {
           fromToken: '0xTokenA',
-          tokenOut: '0xTokenB',
-          amountIn: '1000000',
+          toToken: '0xTokenB',
+          amount: '1000000',
           chain: 'ethereum',
           slippage: 0.5,
         } as unknown as Record<string, unknown>,

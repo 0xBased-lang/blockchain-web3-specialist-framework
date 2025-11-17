@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NFTAgent } from '../../../src/agents/NFTAgent.js';
+import type { NFTProviders } from '../../../src/agents/NFTAgent.js';
 import type { AgentConfig } from '../../../src/types/agent.js';
 import type {
-  NFTProviders,
   MintERC721Params,
   MintERC1155Params,
   NFTTransferParams,
@@ -68,11 +68,12 @@ describe('NFTAgent', () => {
       const mintParams: MintERC1155Params = {
         contract: '0xNFTContract',
         recipient: '0xRecipient',
-        tokenId: '1',
+        tokenId: 1,
         amount: '10',
         metadata: {
           name: 'Test Token',
           description: 'Test Description',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };
@@ -128,7 +129,7 @@ describe('NFTAgent', () => {
         type: 'nft_transfer',
         params: {
           contract: '0xNFT',
-          tokenId: '1',
+          tokenId: 1,
           from: '0xFrom',
           to: '0xTo',
           chain: 'ethereum',
@@ -150,7 +151,7 @@ describe('NFTAgent', () => {
         data: {
           success: true,
           txHash: '0x1234567890123456789012345678901234567890123456789012345678901234',
-          tokenId: '1',
+          tokenId: 1,
           metadataUri: 'ipfs://test',
         },
         timestamp: Date.now(),
@@ -167,7 +168,7 @@ describe('NFTAgent', () => {
         data: {
           success: true,
           txHash: 'invalid',
-          tokenId: '1',
+          tokenId: 1,
         },
         timestamp: Date.now(),
       };
@@ -183,7 +184,7 @@ describe('NFTAgent', () => {
         data: {
           success: true,
           txHash: '0x1234567890123456789012345678901234567890123456789012345678901234',
-          tokenId: '1',
+          tokenId: 1,
         },
         timestamp: Date.now(),
       };
@@ -225,10 +226,10 @@ describe('NFTAgent - Additional Coverage', () => {
         contract: '0xNFT',
         recipients: ['0xRecipient1', '0xRecipient2'],
         metadataList: [
-          { name: 'NFT 1', description: 'First NFT' },
-          { name: 'NFT 2', description: 'Second NFT' },
+          { name: 'NFT 1', description: 'First NFT', image: 'ipfs://Qm1...' },
+          { name: 'NFT 2', description: 'Second NFT', image: 'ipfs://Qm2...' },
         ],
-        chain: 'ethereum',
+        chain: 'ethereum' as const,
       };
 
       const results = await agent.batchMint(batchParams);

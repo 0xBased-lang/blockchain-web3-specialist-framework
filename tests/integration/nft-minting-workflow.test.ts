@@ -13,9 +13,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JsonRpcProvider } from 'ethers';
 import { NFTAgent } from '../../src/agents/NFTAgent.js';
+import type { NFTProviders } from '../../src/agents/NFTAgent.js';
 import type { AgentConfig } from '../../src/types/agent.js';
 import type {
-  NFTProviders,
   MintERC721Params,
   MintERC1155Params,
   NFTTransferParams,
@@ -109,11 +109,14 @@ describe('NFT Minting Workflow E2E', () => {
         expect(validation.errors).toHaveLength(0);
 
         // Verify result contains expected fields
-        if (result.data && 'txHash' in result.data) {
-          expect(result.data.txHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
-        }
-        if (result.data && 'tokenId' in result.data) {
-          expect(result.data.tokenId).toBeDefined();
+        if (result.data && typeof result.data === 'object') {
+          const data = result.data as { txHash?: string; tokenId?: string };
+          if (data.txHash) {
+            expect(data.txHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
+          }
+          if (data.tokenId) {
+            expect(data.tokenId).toBeDefined();
+          }
         }
       }
     });
@@ -143,6 +146,7 @@ describe('NFT Minting Workflow E2E', () => {
         metadata: {
           name: 'Invalid Test',
           description: 'Should fail',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };
@@ -159,7 +163,7 @@ describe('NFT Minting Workflow E2E', () => {
       const mintParams: MintERC1155Params = {
         contract: '0x76BE3b62873462d2142405439777e971754E8E77', // Parallel Alpha
         recipient: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-        tokenId: '1',
+        tokenId: 1,
         amount: '100', // Mint 100 tokens
         metadata: {
           name: 'Test Token Type #1',
@@ -197,9 +201,9 @@ describe('NFT Minting Workflow E2E', () => {
       const mint1: MintERC1155Params = {
         contract: '0x76BE3b62873462d2142405439777e971754E8E77',
         recipient: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-        tokenId: '1',
+        tokenId: 1,
         amount: '50',
-        metadata: { name: 'Type 1' },
+        metadata: { name: 'Type 1', description: 'Test description', image: 'ipfs://QmTest.../image.png' },
         chain: 'ethereum',
       };
 
@@ -210,9 +214,9 @@ describe('NFT Minting Workflow E2E', () => {
       const mint2: MintERC1155Params = {
         contract: '0x76BE3b62873462d2142405439777e971754E8E77',
         recipient: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-        tokenId: '2',
+        tokenId: 2,
         amount: '75',
-        metadata: { name: 'Type 2' },
+        metadata: { name: 'Type 2', description: 'Test description', image: 'ipfs://QmTest.../image.png' },
         chain: 'ethereum',
       };
 
@@ -231,9 +235,9 @@ describe('NFT Minting Workflow E2E', () => {
           '0xdD2FD4581271e230360230F9337D5c0430Bf44C0',
         ],
         metadataList: [
-          { name: 'NFT #1', description: 'First batch NFT' },
-          { name: 'NFT #2', description: 'Second batch NFT' },
-          { name: 'NFT #3', description: 'Third batch NFT' },
+          { name: 'NFT #1', description: 'First batch NFT', image: 'ipfs://QmBatch1...' },
+          { name: 'NFT #2', description: 'Second batch NFT', image: 'ipfs://QmBatch2...' },
+          { name: 'NFT #3', description: 'Third batch NFT', image: 'ipfs://QmBatch3...' },
         ],
         chain: 'ethereum',
       };
@@ -245,7 +249,7 @@ describe('NFT Minting Workflow E2E', () => {
       expect(results.length).toBe(3);
 
       // All should succeed
-      results.forEach((result, index) => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(typeof result.success).toBe('boolean');
       });
@@ -260,11 +264,11 @@ describe('NFT Minting Workflow E2E', () => {
           '0xdD2FD4581271e230360230F9337D5c0430Bf44C0', // Valid
         ],
         metadataList: [
-          { name: 'NFT #1' },
-          { name: 'NFT #2' },
-          { name: 'NFT #3' },
+          { name: 'NFT #1', description: 'Batch NFT 1', image: 'ipfs://QmTest1...' },
+          { name: 'NFT #2', description: 'Batch NFT 2', image: 'ipfs://QmTest2...' },
+          { name: 'NFT #3', description: 'Batch NFT 3', image: 'ipfs://QmTest3...' },
         ],
-        chain: 'ethereum',
+        chain: 'ethereum' as const,
       };
 
       const results = await agent.batchMint(batchParams);
@@ -273,7 +277,6 @@ describe('NFT Minting Workflow E2E', () => {
       expect(Array.isArray(results)).toBe(true);
 
       // Should have mix of success and failure
-      const successCount = results.filter((r) => r.success).length;
       const failureCount = results.filter((r) => !r.success).length;
 
       expect(failureCount).toBeGreaterThan(0); // At least one should fail
@@ -315,7 +318,7 @@ describe('NFT Minting Workflow E2E', () => {
         tokenId: '1',
         from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         to: '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199',
-        amount: '25', // Transfer 25 tokens
+        amount: 25, // Transfer 25 tokens
         chain: 'ethereum',
       };
 
@@ -459,6 +462,7 @@ describe('NFT Minting Workflow E2E', () => {
         metadata: {
           name: 'Network Test NFT',
           description: 'Should fail due to network error',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };
@@ -481,6 +485,7 @@ describe('NFT Minting Workflow E2E', () => {
         metadata: {
           name: 'Gas Test NFT',
           description: 'May fail due to insufficient gas',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };
@@ -523,6 +528,7 @@ describe('NFT Minting Workflow E2E', () => {
         metadata: {
           name: 'Invalid Contract Test',
           description: 'Should fail - not a valid NFT contract',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };
@@ -542,6 +548,7 @@ describe('NFT Minting Workflow E2E', () => {
         metadata: {
           name: 'Gas Estimation Test',
           description: 'Test gas estimation',
+          image: 'ipfs://QmTest.../image.png',
         },
         chain: 'ethereum',
       };

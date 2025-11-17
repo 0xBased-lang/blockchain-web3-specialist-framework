@@ -205,8 +205,9 @@ export interface MintERC721Params {
 export interface MintERC1155Params {
   readonly contract: string;
   readonly recipient: string;
+  readonly tokenId: number; // Token ID (ERC1155 can have multiple token types)
   readonly metadata: NFTMetadata;
-  readonly amount: number; // Number of editions
+  readonly amount: string; // Amount to mint (as string to handle large numbers)
   readonly chain: EVMChain;
   readonly royaltyBps?: number;
   readonly royaltyRecipient?: string;

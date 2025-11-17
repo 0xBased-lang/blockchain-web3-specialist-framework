@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SecurityAgent } from '../../../src/agents/SecurityAgent.js';
+import type { SecurityProviders } from '../../../src/agents/SecurityAgent.js';
 import type { AgentConfig } from '../../../src/types/agent.js';
 import type {
-  SecurityProviders,
   AuditParams,
   TransactionValidationParams,
   MaliciousCheckParams,

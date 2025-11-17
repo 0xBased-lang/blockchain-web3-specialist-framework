@@ -197,7 +197,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
       };
 
       const task = {
@@ -221,7 +220,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
       };
 
       const result = await agent.analyzeTransactions(txParams);
@@ -237,7 +235,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
       };
 
       const result = await agent.analyzeTransactions(txParams);
@@ -270,7 +267,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
+        period: 'month',
       };
 
       const task = {
@@ -293,7 +290,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
+        period: 'month',
       };
 
       const result = await agent.analyzeGasUsage(gasParams);
@@ -312,7 +309,7 @@ describe('Analytics Reporting Workflow E2E', () => {
       const gasParams: GasAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
+        period: 'month',
       };
 
       const result = await agent.analyzeGasUsage(gasParams);
@@ -345,8 +342,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now() - 86400000, // 24 hours ago
-        endTime: Date.now(),
       };
 
       const task = {
@@ -369,8 +364,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now() - 86400000 * 30, // 30 days
-        endTime: Date.now(),
       };
 
       const result = await agent.getPriceHistory(priceParams);
@@ -392,8 +385,6 @@ describe('Analytics Reporting Workflow E2E', () => {
           token: 'ETH',
           chain: 'ethereum',
           interval,
-          startTime: Date.now() - 86400000,
-          endTime: Date.now(),
         };
 
         const result = await agent.getPriceHistory(priceParams);
@@ -414,10 +405,10 @@ describe('Analytics Reporting Workflow E2E', () => {
       if (result && 'performance' in result) {
         const perf = result.performance as Record<string, unknown>;
         if ('totalReturn' in perf) {
-          expect(typeof perf.totalReturn).toBe('number');
+          expect(typeof perf['totalReturn']).toBe('number');
         }
         if ('percentReturn' in perf) {
-          expect(typeof perf.percentReturn).toBe('number');
+          expect(typeof perf['percentReturn']).toBe('number');
         }
       }
     });
@@ -500,8 +491,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now() - 86400000 * 30,
-        endTime: Date.now(),
       };
 
       const result = await agent.getPriceHistory(priceParams);
@@ -535,7 +524,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txParams: TransactionAnalysisParams = {
         address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         chain: 'ethereum',
-        endBlock: 18000000,
       };
 
       const result = await agent.analyzeTransactions(txParams);
@@ -550,8 +538,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const invalidPriceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now(), // Start after end
-        endTime: Date.now() - 86400000,
       };
 
       const result = await agent.getPriceHistory(invalidPriceParams);
@@ -569,8 +555,6 @@ describe('Analytics Reporting Workflow E2E', () => {
       const priceParams: PriceHistoryParams = {
         token: 'ETH',
         chain: 'ethereum',
-        startTime: Date.now() - 3600000,
-        endTime: Date.now(),
       };
 
       try {
@@ -594,13 +578,11 @@ describe('Analytics Reporting Workflow E2E', () => {
       const txAnalysis = await agent.analyzeTransactions({
         address,
         chain: 'ethereum',
-        endBlock: 18000000,
       });
 
       const gasAnalysis = await agent.analyzeGasUsage({
         address,
         chain: 'ethereum',
-        endBlock: 18000000,
       });
 
       // Verify all data collected

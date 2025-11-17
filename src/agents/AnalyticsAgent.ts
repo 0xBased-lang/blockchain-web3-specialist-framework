@@ -626,6 +626,9 @@ export class AnalyticsAgent extends SpecializedAgentBase {
         )
       : undefined;
 
+    // Suppress unused variable warning - kept for future use
+    void balancesData;
+
     // Cache prices with 5-second time bucket (prices change frequently)
     const timeBucket = Math.floor(Date.now() / 5000) * 5000;
     const cacheKey = `prices:batch:${timeBucket}`;
