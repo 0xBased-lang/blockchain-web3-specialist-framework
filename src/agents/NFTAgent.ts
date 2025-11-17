@@ -21,6 +21,8 @@ import { SpecializedAgentBase } from './SpecializedAgentBase.js';
 import { TransactionBuilder } from '../subagents/TransactionBuilder.js';
 import { ContractAnalyzer } from '../subagents/ContractAnalyzer.js';
 import { WalletManager } from '../subagents/WalletManager.js';
+import { RPCBatcher } from '../utils/rpc-batcher.js';
+import { sharedCache } from '../utils/shared-cache.js';
 import type {
   Task,
   TaskPlan,
@@ -63,6 +65,9 @@ export class NFTAgent extends SpecializedAgentBase {
   private readonly _contractAnalyzer: ContractAnalyzer;
   private readonly _walletManager: WalletManager;
 
+  // Optimization utilities
+  private readonly batchers: Map<string, RPCBatcher> = new Map();
+
   constructor(
     config: AgentConfig,
     providers: NFTProviders,
@@ -98,9 +103,26 @@ export class NFTAgent extends SpecializedAgentBase {
 
     this._walletManager = new WalletManager();
 
+    // Initialize RPC batchers for each provider
+    if (providers.ethereum) {
+      this.batchers.set('ethereum', new RPCBatcher(providers.ethereum._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.polygon) {
+      this.batchers.set('polygon', new RPCBatcher(providers.polygon._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+
     logger.info('NFTAgent initialized', {
       id: this.id,
       chains: Object.keys(providers),
+      batchingEnabled: this.batchers.size > 0,
     });
   }
 
@@ -609,14 +631,25 @@ export class NFTAgent extends SpecializedAgentBase {
   private async stepValidateContract(step: Step): Promise<Result> {
     const { contract, chain } = step.params as { contract: string; chain: string };
 
-    logger.info('Validating NFT contract', { contract, chain });
+    // Cache contract validation (contracts don't change, long TTL)
+    const cacheKey = `nft-contract:${chain}:${contract}`;
 
-    // Mock validation
-    if (!contract || contract.length !== 42) {
-      return this.createFailureResult('Invalid contract address');
-    }
+    const validation = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Validating NFT contract', { contract, chain });
 
-    return this.createSuccessResult({ valid: true });
+        // Mock validation
+        if (!contract || contract.length !== 42) {
+          throw new Error('Invalid contract address');
+        }
+
+        return { valid: true };
+      },
+      300000 // 5 minute TTL (contracts rarely change)
+    );
+
+    return this.createSuccessResult(validation);
   }
 
   /**
@@ -853,17 +886,29 @@ export class NFTAgent extends SpecializedAgentBase {
   private async stepFetchCollectionStats(step: Step): Promise<Result<CollectionStats>> {
     const { contract, chain } = step.params as { contract: string; chain: string };
 
-    logger.info('Fetching collection statistics', { contract, chain });
+    // Cache collection stats with 30-second time bucket
+    const timeBucket = Math.floor(Date.now() / 30000) * 30000;
+    const cacheKey = `nft-stats:${chain}:${contract}:${timeBucket}`;
 
-    // Mock stats
-    const stats: CollectionStats = {
-      contract,
-      totalSupply: 10000,
-      ownersCount: 3500,
-      floorPrice: '0.5',
-      volumeTraded: '15000',
-      chain: chain as 'ethereum',
-    };
+    const stats = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Fetching collection statistics', { contract, chain });
+
+        // Mock stats
+        const collectionStats: CollectionStats = {
+          contract,
+          totalSupply: 10000,
+          ownersCount: 3500,
+          floorPrice: '0.5',
+          volumeTraded: '15000',
+          chain: chain as 'ethereum',
+        };
+
+        return collectionStats;
+      },
+      30000 // 30 second TTL
+    );
 
     return this.createSuccessResult(stats);
   }

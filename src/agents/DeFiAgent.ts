@@ -25,6 +25,8 @@ import { GasOptimizer } from '../subagents/GasOptimizer.js';
 import { TransactionSimulator } from '../subagents/TransactionSimulator.js';
 import { PriceOracle } from '../subagents/PriceOracle.js';
 import { WalletManager } from '../subagents/WalletManager.js';
+import { RPCBatcher } from '../utils/rpc-batcher.js';
+import { sharedCache } from '../utils/shared-cache.js';
 import type {
   Task,
   TaskPlan,
@@ -70,6 +72,9 @@ export class DeFiAgent extends SpecializedAgentBase {
   private readonly _simulator: TransactionSimulator;
   private readonly priceOracle: PriceOracle;
   private readonly _walletManager: WalletManager;
+
+  // Optimization utilities
+  private readonly batchers: Map<string, RPCBatcher> = new Map();
 
   constructor(
     config: AgentConfig,
@@ -117,10 +122,41 @@ export class DeFiAgent extends SpecializedAgentBase {
 
     this._walletManager = new WalletManager();
 
+    // Initialize RPC batchers for each provider
+    if (providers.ethereum) {
+      this.batchers.set('ethereum', new RPCBatcher(providers.ethereum._getConnection().url, {
+        maxBatchSize: 50, // Conservative for production
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.polygon) {
+      this.batchers.set('polygon', new RPCBatcher(providers.polygon._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.arbitrum) {
+      this.batchers.set('arbitrum', new RPCBatcher(providers.arbitrum._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.optimism) {
+      this.batchers.set('optimism', new RPCBatcher(providers.optimism._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+
     logger.info('DeFiAgent initialized', {
       id: this.id,
       chains: Object.keys(providers),
       defaultSlippage: this.defiConfig.defaultSlippage,
+      batchingEnabled: this.batchers.size > 0,
     });
   }
 
@@ -249,9 +285,19 @@ export class DeFiAgent extends SpecializedAgentBase {
 
     const check = async (): Promise<void> => {
       try {
-        const priceResult = await this.priceOracle.queryPrice({
-          tokenSymbol: params.token,
-        });
+        // Cache key with 5-second time bucket to reduce oracle calls
+        const timeBucket = Math.floor(Date.now() / 5000) * 5000;
+        const cacheKey = `price:${params.token}:${timeBucket}`;
+
+        const priceResult = await sharedCache.get(
+          cacheKey,
+          async () => {
+            return await this.priceOracle.queryPrice({
+              tokenSymbol: params.token,
+            });
+          },
+          5000 // 5 second TTL
+        );
 
         // Convert bigint to number for arithmetic operations
         const currentPrice =
@@ -573,32 +619,42 @@ export class DeFiAgent extends SpecializedAgentBase {
       amount: string;
     };
 
-    // Simulate getting quotes from multiple DEXs
-    // In production, this would call Uniswap, Sushiswap, etc.
-    const quotes: DEXQuote[] = [
-      {
-        dex: 'Uniswap V3',
-        amountOut: (parseFloat(amount) * 1800).toString(), // Mock conversion
-        priceImpact: 0.1,
-        gasEstimate: '150000',
-      },
-      {
-        dex: 'Sushiswap',
-        amountOut: (parseFloat(amount) * 1795).toString(),
-        priceImpact: 0.15,
-        gasEstimate: '160000',
-      },
-    ];
+    // Cache DEX quotes for 3 seconds (quotes change quickly)
+    const timeBucket = Math.floor(Date.now() / 3000) * 3000;
+    const cacheKey = `dex-quote:${fromToken}:${toToken}:${amount}:${timeBucket}`;
 
-    logger.info('Got DEX quotes', {
-      fromToken,
-      toToken,
-      quotesCount: quotes.length,
-    });
+    const bestQuote = await sharedCache.get(
+      cacheKey,
+      async () => {
+        // Simulate getting quotes from multiple DEXs
+        // In production, this would call Uniswap, Sushiswap, etc.
+        const quotes: DEXQuote[] = [
+          {
+            dex: 'Uniswap V3',
+            amountOut: (parseFloat(amount) * 1800).toString(), // Mock conversion
+            priceImpact: 0.1,
+            gasEstimate: '150000',
+          },
+          {
+            dex: 'Sushiswap',
+            amountOut: (parseFloat(amount) * 1795).toString(),
+            priceImpact: 0.15,
+            gasEstimate: '160000',
+          },
+        ];
 
-    // Select best quote (highest output, accounting for gas)
-    const bestQuote = quotes.reduce((best, current) =>
-      parseFloat(current.amountOut) > parseFloat(best.amountOut) ? current : best
+        logger.info('Got DEX quotes', {
+          fromToken,
+          toToken,
+          quotesCount: quotes.length,
+        });
+
+        // Select best quote (highest output, accounting for gas)
+        return quotes.reduce((best, current) =>
+          parseFloat(current.amountOut) > parseFloat(best.amountOut) ? current : best
+        );
+      },
+      3000 // 3 second TTL
     );
 
     return this.createSuccessResult(bestQuote);
@@ -610,16 +666,27 @@ export class DeFiAgent extends SpecializedAgentBase {
   private async stepOptimizeGas(step: Step): Promise<Result> {
     const { chain } = step.params as { chain: string };
 
-    try {
-      const gasParams = await this.gasOptimizer.getOptimizedGas();
+    // Cache key with 10-second time bucket for gas prices
+    const timeBucket = Math.floor(Date.now() / 10000) * 10000;
+    const cacheKey = `gas:${chain}:${timeBucket}`;
 
-      return this.createSuccessResult({
-        maxFeePerGas: gasParams.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas.toString(),
-        strategy: gasParams.strategy,
-      });
+    try {
+      const gasResult = await sharedCache.get(
+        cacheKey,
+        async () => {
+          const gasParams = await this.gasOptimizer.getOptimizedGas();
+          return {
+            maxFeePerGas: gasParams.maxFeePerGas.toString(),
+            maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas.toString(),
+            strategy: gasParams.strategy,
+          };
+        },
+        10000 // 10 second TTL
+      );
+
+      return this.createSuccessResult(gasResult);
     } catch (error) {
-      // Fallback to provider's fee data
+      // Fallback to provider's fee data (also cached)
       logger.warn('Gas optimizer failed, using provider fee data', { error });
 
       const provider = this.getProvider(chain);
@@ -627,13 +694,20 @@ export class DeFiAgent extends SpecializedAgentBase {
         return this.createFailureResult(`No provider for chain: ${chain}`);
       }
 
-      const feeData = await provider.getFeeData();
+      const feeResult = await sharedCache.get(
+        `gas:${chain}:fallback:${timeBucket}`,
+        async () => {
+          const feeData = await provider.getFeeData();
+          return {
+            maxFeePerGas: feeData.maxFeePerGas?.toString() || '0',
+            maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString() || '0',
+            strategy: 'provider',
+          };
+        },
+        10000
+      );
 
-      return this.createSuccessResult({
-        maxFeePerGas: feeData.maxFeePerGas?.toString() || '0',
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString() || '0',
-        strategy: 'provider',
-      });
+      return this.createSuccessResult(feeResult);
     }
   }
 

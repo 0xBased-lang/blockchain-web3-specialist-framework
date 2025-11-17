@@ -18,6 +18,8 @@ import { JsonRpcProvider } from 'ethers';
 import { SpecializedAgentBase } from './SpecializedAgentBase.js';
 import { ContractAnalyzer } from '../subagents/ContractAnalyzer.js';
 import { TransactionSimulator } from '../subagents/TransactionSimulator.js';
+import { RPCBatcher } from '../utils/rpc-batcher.js';
+import { sharedCache } from '../utils/shared-cache.js';
 import type {
   Task,
   TaskPlan,
@@ -59,6 +61,9 @@ export class SecurityAgent extends SpecializedAgentBase {
   private readonly contractAnalyzer: ContractAnalyzer;
   private readonly _simulator: TransactionSimulator;
 
+  // Optimization utilities
+  private readonly batchers: Map<string, RPCBatcher> = new Map();
+
   constructor(
     config: AgentConfig,
     providers: SecurityProviders,
@@ -78,9 +83,26 @@ export class SecurityAgent extends SpecializedAgentBase {
     this.contractAnalyzer = new ContractAnalyzer({ ethereumProvider: primaryProvider });
     this._simulator = new TransactionSimulator(primaryProvider);
 
+    // Initialize RPC batchers for each provider
+    if (providers.ethereum) {
+      this.batchers.set('ethereum', new RPCBatcher(providers.ethereum._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.polygon) {
+      this.batchers.set('polygon', new RPCBatcher(providers.polygon._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+
     logger.info('SecurityAgent initialized', {
       id: this.id,
       chains: Object.keys(providers),
+      batchingEnabled: this.batchers.size > 0,
     });
   }
 
@@ -185,10 +207,20 @@ export class SecurityAgent extends SpecializedAgentBase {
 
     const check = async (): Promise<void> => {
       try {
-        const audit = await this.auditContract({
-          address: params.address,
-          chain: params.chain as 'ethereum',
-        });
+        // Cache audit results with 30-second time bucket to avoid duplicate audits
+        const timeBucket = Math.floor(Date.now() / 30000) * 30000;
+        const cacheKey = `sec-monitor:${params.address}:${timeBucket}`;
+
+        const audit = await sharedCache.get(
+          cacheKey,
+          async () => {
+            return await this.auditContract({
+              address: params.address,
+              chain: params.chain as 'ethereum',
+            });
+          },
+          30000 // 30 second TTL
+        );
 
         if (params.alertOnNewFindings && audit.findings.length > previousFindings) {
           logger.warn('New security findings detected!', {
@@ -541,13 +573,24 @@ export class SecurityAgent extends SpecializedAgentBase {
   private async stepCheckVulnerabilities(step: Step): Promise<Result> {
     const { address } = step.params as { address: string };
 
-    logger.info('Checking known vulnerabilities', { address });
+    // Cache vulnerability checks (static data, long TTL)
+    const cacheKey = `sec-vulns:${address}`;
 
-    // Mock vulnerability check
-    // In production: check against vulnerability databases
-    const knownVulnerabilities: VulnerabilityFinding[] = [];
+    const result = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Checking known vulnerabilities', { address });
 
-    return this.createSuccessResult({ vulnerabilities: knownVulnerabilities });
+        // Mock vulnerability check
+        // In production: check against vulnerability databases
+        const knownVulnerabilities: VulnerabilityFinding[] = [];
+
+        return { vulnerabilities: knownVulnerabilities };
+      },
+      600000 // 10 minute TTL (vulnerability databases don't change frequently)
+    );
+
+    return this.createSuccessResult(result);
   }
 
   /**
@@ -697,12 +740,23 @@ export class SecurityAgent extends SpecializedAgentBase {
   private async stepCheckMaliciousPatterns(step: Step): Promise<Result> {
     const { address } = step.params as { address: string };
 
-    logger.info('Checking for malicious patterns', { address });
+    // Cache malicious pattern checks (5 minute TTL)
+    const cacheKey = `sec-malicious:${address}`;
 
-    // Mock check
-    const malicious = false;
+    const result = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Checking for malicious patterns', { address });
 
-    return this.createSuccessResult({ malicious });
+        // Mock check
+        const malicious = false;
+
+        return { malicious };
+      },
+      300000 // 5 minute TTL
+    );
+
+    return this.createSuccessResult(result);
   }
 
   /**

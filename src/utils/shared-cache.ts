@@ -339,7 +339,7 @@ export class SharedCache {
 export const sharedCache = new SharedCache({
   maxSize: 10000,
   defaultTTL: 30000,
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env['NODE_ENV'] === 'development',
 });
 
 /**

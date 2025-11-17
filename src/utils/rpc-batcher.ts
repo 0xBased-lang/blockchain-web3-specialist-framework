@@ -167,7 +167,7 @@ export class RPCBatcher {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const results: JSONRPCResponse[] = await response.json();
+      const results = (await response.json()) as JSONRPCResponse[];
       const latency = Date.now() - startTime;
       this.stats.latencies.push(latency);
 

@@ -17,6 +17,8 @@ import { JsonRpcProvider } from 'ethers';
 import { Connection } from '@solana/web3.js';
 import { SpecializedAgentBase } from './SpecializedAgentBase.js';
 import { PriceOracle } from '../subagents/PriceOracle.js';
+import { RPCBatcher } from '../utils/rpc-batcher.js';
+import { sharedCache } from '../utils/shared-cache.js';
 import type {
   Task,
   TaskPlan,
@@ -61,6 +63,9 @@ export class AnalyticsAgent extends SpecializedAgentBase {
   private readonly _analyticsConfig: AnalyticsAgentConfig;
   private readonly _priceOracle: PriceOracle;
 
+  // Optimization utilities
+  private readonly batchers: Map<string, RPCBatcher> = new Map();
+
   constructor(
     config: AgentConfig,
     providers: AnalyticsProviders,
@@ -76,9 +81,26 @@ export class AnalyticsAgent extends SpecializedAgentBase {
 
     this._priceOracle = new PriceOracle({}, primaryProvider);
 
+    // Initialize RPC batchers for each provider
+    if (providers.ethereum) {
+      this.batchers.set('ethereum', new RPCBatcher(providers.ethereum._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+    if (providers.polygon) {
+      this.batchers.set('polygon', new RPCBatcher(providers.polygon._getConnection().url, {
+        maxBatchSize: 50,
+        maxWaitTime: 10,
+        debug: false,
+      }));
+    }
+
     logger.info('AnalyticsAgent initialized', {
       id: this.id,
       chains: Object.keys(providers),
+      batchingEnabled: this.batchers.size > 0,
     });
   }
 
@@ -535,16 +557,28 @@ export class AnalyticsAgent extends SpecializedAgentBase {
   private async stepFetchMultiChainBalances(step: Step): Promise<Result> {
     const { address, chains } = step.params as { address: string; chains: readonly string[] };
 
-    logger.info('Fetching multi-chain balances', { address, chains });
+    // Cache balances with 10-second time bucket
+    const timeBucket = Math.floor(Date.now() / 10000) * 10000;
+    const cacheKey = `balances:${address}:${chains.join(',')}:${timeBucket}`;
 
-    // Mock balances
-    const balances = [
-      { chain: 'ethereum', token: 'ETH', balance: '2.5', symbol: 'ETH' },
-      { chain: 'ethereum', token: 'USDC', balance: '5000', symbol: 'USDC' },
-      { chain: 'polygon', token: 'MATIC', balance: '1000', symbol: 'MATIC' },
-    ];
+    const result = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Fetching multi-chain balances', { address, chains });
 
-    return this.createSuccessResult({ balances });
+        // Mock balances
+        const balances = [
+          { chain: 'ethereum', token: 'ETH', balance: '2.5', symbol: 'ETH' },
+          { chain: 'ethereum', token: 'USDC', balance: '5000', symbol: 'USDC' },
+          { chain: 'polygon', token: 'MATIC', balance: '1000', symbol: 'MATIC' },
+        ];
+
+        return { balances };
+      },
+      10000 // 10 second TTL
+    );
+
+    return this.createSuccessResult(result);
   }
 
   /**
@@ -564,16 +598,28 @@ export class AnalyticsAgent extends SpecializedAgentBase {
         )
       : undefined;
 
-    logger.info('Fetching token prices');
+    // Cache prices with 5-second time bucket (prices change frequently)
+    const timeBucket = Math.floor(Date.now() / 5000) * 5000;
+    const cacheKey = `prices:batch:${timeBucket}`;
 
-    // Mock prices
-    const prices = {
-      ETH: 1800,
-      USDC: 1,
-      MATIC: 0.8,
-    };
+    const result = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Fetching token prices');
 
-    return this.createSuccessResult({ prices });
+        // Mock prices
+        const prices = {
+          ETH: 1800,
+          USDC: 1,
+          MATIC: 0.8,
+        };
+
+        return { prices };
+      },
+      5000 // 5 second TTL
+    );
+
+    return this.createSuccessResult(result);
   }
 
   /**
@@ -770,28 +816,39 @@ export class AnalyticsAgent extends SpecializedAgentBase {
   private async stepFetchPriceHistoryData(step: Step): Promise<Result<PriceHistory>> {
     const params = step.params as unknown as PriceHistoryParams;
 
-    logger.info('Fetching price history', params);
+    // Cache price history (60 second TTL, data doesn't change much)
+    const cacheKey = `price-history:${params.token}:${params.chain}:${params.period}:${params.dataPoints || 100}`;
 
-    // Mock price history
-    const data = Array.from({ length: params.dataPoints || 100 }, (_, i) => ({
-      timestamp: Date.now() - i * 3600000,
-      priceUSD: 1800 + Math.random() * 100,
-      volume24h: 1000000000,
-    }));
+    const priceHistory = await sharedCache.get(
+      cacheKey,
+      async () => {
+        logger.info('Fetching price history', params);
 
-    const priceHistory: PriceHistory = {
-      token: params.token,
-      chain: params.chain,
-      period: params.period,
-      data,
-      summary: {
-        currentPrice: 1850,
-        highPrice: 1900,
-        lowPrice: 1750,
-        averagePrice: 1825,
-        changePercent: 2.5,
+        // Mock price history
+        const data = Array.from({ length: params.dataPoints || 100 }, (_, i) => ({
+          timestamp: Date.now() - i * 3600000,
+          priceUSD: 1800 + Math.random() * 100,
+          volume24h: 1000000000,
+        }));
+
+        const history: PriceHistory = {
+          token: params.token,
+          chain: params.chain,
+          period: params.period,
+          data,
+          summary: {
+            currentPrice: 1850,
+            highPrice: 1900,
+            lowPrice: 1750,
+            averagePrice: 1825,
+            changePercent: 2.5,
+          },
+        };
+
+        return history;
       },
-    };
+      60000 // 60 second TTL
+    );
 
     return this.createSuccessResult(priceHistory) as Result<PriceHistory>;
   }
