@@ -65,3 +65,13 @@ export async function retry<T>(
  * Export crypto utilities
  */
 export * from './crypto.js';
+
+/**
+ * Export rate limiting utilities
+ */
+export { RateLimiter, RateLimiterManager, RPCProvider, type RateLimitConfig } from './RateLimiter.js';
+
+/**
+ * Export caching utilities
+ */
+export { CacheManager, CacheType, type CacheStats } from './CacheManager.js';

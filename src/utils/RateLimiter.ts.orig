@@ -1,0 +1,317 @@
+/**
+ * Rate Limiter Utility
+ *
+ * Provides rate limiting for RPC providers using bottleneck.
+ * Prevents exceeding provider rate limits and implements
+ * exponential backoff on failures.
+ *
+ * Usage:
+ *   const limiter = RateLimiter.create('alchemy');
+ *   await limiter.schedule(() => provider.getBalance(address));
+ */
+
+import Bottleneck from 'bottleneck';
+import { logger } from './logger.js';
+
+/**
+ * RPC Provider types with known rate limits
+ */
+export enum RPCProvider {
+  ALCHEMY = 'alchemy',
+  INFURA = 'infura',
+  QUICKNODE = 'quicknode',
+  PUBLIC = 'public',
+  CUSTOM = 'custom',
+}
+
+/**
+ * Rate limit configuration for a provider
+ */
+export interface RateLimitConfig {
+  /** Maximum requests per second */
+  maxRequestsPerSecond: number;
+  /** Maximum concurrent requests */
+  maxConcurrent?: number;
+  /** Minimum time between requests (ms) */
+  minTime?: number;
+  /** Reservoir (burst capacity) */
+  reservoir?: number;
+  /** Reservoir refresh interval (ms) */
+  reservoirRefreshInterval?: number;
+  /** Reservoir refresh amount */
+  reservoirRefreshAmount?: number;
+}
+
+/**
+ * Default rate limit configurations for known providers
+ */
+const DEFAULT_CONFIGS: Record<RPCProvider, RateLimitConfig> = {
+  [RPCProvider.ALCHEMY]: {
+    maxRequestsPerSecond: 25,
+    maxConcurrent: 10,
+    minTime: 40, // 1000ms / 25 req/s
+    reservoir: 100, // Burst capacity
+    reservoirRefreshInterval: 1000,
+    reservoirRefreshAmount: 25,
+  },
+  [RPCProvider.INFURA]: {
+    maxRequestsPerSecond: 10,
+    maxConcurrent: 5,
+    minTime: 100, // 1000ms / 10 req/s
+    reservoir: 50,
+    reservoirRefreshInterval: 1000,
+    reservoirRefreshAmount: 10,
+  },
+  [RPCProvider.QUICKNODE]: {
+    maxRequestsPerSecond: 15,
+    maxConcurrent: 8,
+    minTime: 67, // 1000ms / 15 req/s
+    reservoir: 60,
+    reservoirRefreshInterval: 1000,
+    reservoirRefreshAmount: 15,
+  },
+  [RPCProvider.PUBLIC]: {
+    maxRequestsPerSecond: 5,
+    maxConcurrent: 3,
+    minTime: 200, // 1000ms / 5 req/s
+    reservoir: 10,
+    reservoirRefreshInterval: 1000,
+    reservoirRefreshAmount: 5,
+  },
+  [RPCProvider.CUSTOM]: {
+    maxRequestsPerSecond: 10,
+    maxConcurrent: 5,
+    minTime: 100,
+  },
+};
+
+/**
+ * Rate Limiter Class
+ *
+ * Wraps bottleneck with blockchain-specific configuration
+ */
+export class RateLimiter {
+  private limiter: Bottleneck;
+  private readonly provider: RPCProvider;
+  private readonly config: RateLimitConfig;
+  private requestCount = 0;
+  private errorCount = 0;
+  private lastRequestTime = 0;
+
+  private constructor(provider: RPCProvider, config?: Partial<RateLimitConfig>) {
+    this.provider = provider;
+    this.config = {
+      ...DEFAULT_CONFIGS[provider],
+      ...config,
+    };
+
+    // Create bottleneck instance
+    this.limiter = new Bottleneck({
+      maxConcurrent: this.config.maxConcurrent,
+      minTime: this.config.minTime,
+      reservoir: this.config.reservoir,
+      reservoirRefreshInterval: this.config.reservoirRefreshInterval,
+      reservoirRefreshAmount: this.config.reservoirRefreshAmount,
+      // Retry strategy: exponential backoff
+      retryStrategy: (retries: number) => {
+        if (retries > 5) {
+          logger.warn(`Rate limiter ${this.provider}: Max retries exceeded`);
+          return null; // Stop retrying
+        }
+        const delay = Math.min(1000 * Math.pow(2, retries), 10000);
+        logger.debug(`Rate limiter ${this.provider}: Retry ${retries} after ${delay}ms`);
+        return delay;
+      },
+    });
+
+    // Event listeners for monitoring
+    this.limiter.on('failed', (error, jobInfo) => {
+      this.errorCount++;
+      logger.warn(`Rate limiter ${this.provider}: Request failed`, {
+        error: error.message,
+        retries: jobInfo.retryCount,
+      });
+    });
+
+    this.limiter.on('retry', (message, jobInfo) => {
+      logger.debug(`Rate limiter ${this.provider}: Retrying request`, {
+        message,
+        retries: jobInfo.retryCount,
+      });
+    });
+
+    this.limiter.on('depleted', () => {
+      logger.warn(`Rate limiter ${this.provider}: Reservoir depleted, throttling requests`);
+    });
+
+    logger.info(`Rate limiter created for ${this.provider}`, { config: this.config });
+  }
+
+  /**
+   * Create a rate limiter for a specific provider
+   *
+   * @param provider - RPC provider type
+   * @param config - Optional custom configuration
+   * @returns RateLimiter instance
+   */
+  static create(provider: RPCProvider, config?: Partial<RateLimitConfig>): RateLimiter {
+    return new RateLimiter(provider, config);
+  }
+
+  /**
+   * Create a custom rate limiter with specified limits
+   *
+   * @param maxRequestsPerSecond - Maximum requests per second
+   * @param maxConcurrent - Maximum concurrent requests
+   * @returns RateLimiter instance
+   */
+  static createCustom(maxRequestsPerSecond: number, maxConcurrent = 5): RateLimiter {
+    return new RateLimiter(RPCProvider.CUSTOM, {
+      maxRequestsPerSecond,
+      maxConcurrent,
+      minTime: 1000 / maxRequestsPerSecond,
+    });
+  }
+
+  /**
+   * Schedule a request with rate limiting
+   *
+   * @param fn - Function to execute
+   * @param options - Optional bottleneck job options
+   * @returns Result of the function
+   */
+  async schedule<T>(
+    fn: () => Promise<T>,
+    options?: Bottleneck.JobOptions
+  ): Promise<T> {
+    this.requestCount++;
+    this.lastRequestTime = Date.now();
+
+    return this.limiter.schedule(options, fn);
+  }
+
+  /**
+   * Wrap a function with rate limiting
+   *
+   * Returns a wrapped version that automatically applies rate limiting.
+   *
+   * @param fn - Function to wrap
+   * @returns Rate-limited function
+   */
+  wrap<T extends (...args: unknown[]) => Promise<unknown>>(
+    fn: T
+  ): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>> {
+    return this.limiter.wrap(fn) as (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>;
+  }
+
+  /**
+   * Get current limiter statistics
+   *
+   * @returns Statistics object
+   */
+  getStats(): {
+    provider: RPCProvider;
+    requestCount: number;
+    errorCount: number;
+    errorRate: number;
+    lastRequestTime: number;
+    queuedJobs: number;
+    runningJobs: number;
+  } {
+    const counts = this.limiter.counts();
+
+    return {
+      provider: this.provider,
+      requestCount: this.requestCount,
+      errorCount: this.errorCount,
+      errorRate: this.requestCount > 0 ? this.errorCount / this.requestCount : 0,
+      lastRequestTime: this.lastRequestTime,
+      queuedJobs: counts.QUEUED,
+      runningJobs: counts.RUNNING,
+    };
+  }
+
+  /**
+   * Update reservoir (for dynamic rate limit adjustment)
+   *
+   * @param reservoir - New reservoir value
+   */
+  updateReservoir(reservoir: number): void {
+    this.limiter.updateSettings({ reservoir });
+    logger.debug(`Rate limiter ${this.provider}: Reservoir updated to ${reservoir}`);
+  }
+
+  /**
+   * Check if limiter is throttling
+   *
+   * @returns True if currently throttling
+   */
+  isThrottling(): boolean {
+    const counts = this.limiter.counts();
+    return counts.QUEUED > 0;
+  }
+
+  /**
+   * Stop the rate limiter and clean up
+   */
+  async stop(): Promise<void> {
+    await this.limiter.stop();
+    logger.info(`Rate limiter ${this.provider}: Stopped`);
+  }
+
+  /**
+   * Wait for all queued jobs to complete
+   */
+  async waitForEmpty(): Promise<void> {
+    await this.limiter.empty();
+  }
+}
+
+/**
+ * Rate Limiter Manager
+ *
+ * Manages multiple rate limiters for different providers
+ */
+export class RateLimiterManager {
+  private limiters: Map<string, RateLimiter> = new Map();
+
+  /**
+   * Get or create a rate limiter for a provider
+   *
+   * @param provider - Provider type
+   * @param name - Optional unique name for this limiter instance
+   * @param config - Optional custom configuration
+   * @returns RateLimiter instance
+   */
+  getLimiter(
+    provider: RPCProvider,
+    name?: string,
+    config?: Partial<RateLimitConfig>
+  ): RateLimiter {
+    const key = name ?? provider;
+
+    if (!this.limiters.has(key)) {
+      const limiter = RateLimiter.create(provider, config);
+      this.limiters.set(key, limiter);
+    }
+
+    return this.limiters.get(key)!;
+  }
+
+  /**
+   * Get all limiter statistics
+   *
+   * @returns Array of stats for all limiters
+   */
+  getAllStats(): Array<ReturnType<RateLimiter['getStats']>> {
+    return Array.from(this.limiters.values()).map((limiter) => limiter.getStats());
+  }
+
+  /**
+   * Stop all rate limiters
+   */
+  async stopAll(): Promise<void> {
+    await Promise.all(Array.from(this.limiters.values()).map((limiter) => limiter.stop()));
+    this.limiters.clear();
+  }
+}

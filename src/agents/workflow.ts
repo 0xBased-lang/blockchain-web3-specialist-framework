@@ -3,12 +3,13 @@
  *
  * Manages execution of task plans with:
  * - Sequential execution
- * - Parallel execution
+ * - Parallel execution with concurrency limits
  * - Dependency management
  * - Timeout handling
  * - Parameter resolution from previous steps
  */
 
+import pLimit from 'p-limit';
 import {
   type TaskPlan,
   type Step,
@@ -24,13 +25,21 @@ import { logger } from '../utils/index.js';
  *
  * Executes task plans with different execution modes:
  * - Sequential: Steps execute one after another
- * - Parallel: Independent steps execute simultaneously
+ * - Parallel: Independent steps execute simultaneously (with concurrency limits)
  * - Conditional: Steps execute based on conditions
  * - Hybrid: Mix of sequential and parallel based on dependencies
  */
 export class WorkflowEngine {
-  constructor() {
-    logger.debug('WorkflowEngine initialized');
+  private readonly maxConcurrentSteps: number;
+
+  /**
+   * Create workflow engine
+   *
+   * @param maxConcurrentSteps - Maximum concurrent step executions (default: 10)
+   */
+  constructor(maxConcurrentSteps = 10) {
+    this.maxConcurrentSteps = maxConcurrentSteps;
+    logger.debug('WorkflowEngine initialized', { maxConcurrentSteps });
   }
 
   /**
@@ -116,7 +125,12 @@ export class WorkflowEngine {
   }
 
   /**
-   * Execute independent steps in parallel
+   * Execute independent steps in parallel with concurrency limiting
+   *
+   * Limits concurrent executions to prevent:
+   * - RPC rate limiting
+   * - Memory exhaustion
+   * - Network congestion
    *
    * @param steps - Steps to execute
    * @param agents - Available agents
@@ -127,14 +141,19 @@ export class WorkflowEngine {
     agents: Map<string, BaseAgent>,
     context: WorkflowContext
   ): Promise<void> {
-    logger.debug(`Executing ${steps.length} steps in parallel`);
+    logger.debug(`Executing ${steps.length} steps in parallel (max concurrent: ${this.maxConcurrentSteps})`);
 
-    // Execute all steps simultaneously
-    const promises = steps.map(async (step) => {
-      const result = await this.executeStep(step, agents, context);
-      context.stepResults.set(step.id, result);
-      return result;
-    });
+    // Create concurrency limiter
+    const limit = pLimit(this.maxConcurrentSteps);
+
+    // Execute steps with concurrency control
+    const promises = steps.map((step) =>
+      limit(async () => {
+        const result = await this.executeStep(step, agents, context);
+        context.stepResults.set(step.id, result);
+        return result;
+      })
+    );
 
     const results = await Promise.all(promises);
 
@@ -148,7 +167,8 @@ export class WorkflowEngine {
   /**
    * Execute steps with dependency-aware parallelization (hybrid mode)
    *
-   * Groups steps by dependency level and executes each level in parallel.
+   * Groups steps by dependency level and executes each level in parallel
+   * with concurrency limiting.
    *
    * @param steps - Steps to execute
    * @param agents - Available agents
@@ -164,15 +184,20 @@ export class WorkflowEngine {
     // Group steps by dependency level
     const levels = this.groupByDependencyLevel(steps);
 
-    // Execute each level in parallel, levels sequentially
-    for (const [level, levelSteps] of levels.entries()) {
-      logger.debug(`Executing level ${level} with ${levelSteps.length} steps`);
+    // Create concurrency limiter
+    const limit = pLimit(this.maxConcurrentSteps);
 
-      const promises = levelSteps.map(async (step) => {
-        const result = await this.executeStep(step, agents, context);
-        context.stepResults.set(step.id, result);
-        return result;
-      });
+    // Execute each level in parallel (with limits), levels sequentially
+    for (const [level, levelSteps] of levels.entries()) {
+      logger.debug(`Executing level ${level} with ${levelSteps.length} steps (max concurrent: ${this.maxConcurrentSteps})`);
+
+      const promises = levelSteps.map((step) =>
+        limit(async () => {
+          const result = await this.executeStep(step, agents, context);
+          context.stepResults.set(step.id, result);
+          return result;
+        })
+      );
 
       const results = await Promise.all(promises);
 
