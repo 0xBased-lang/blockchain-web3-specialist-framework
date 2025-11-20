@@ -215,7 +215,7 @@ export class OrchestratorAgent extends BaseAgent {
    * @param result - Result to validate
    * @returns Validation result
    */
-  async validate(result: Result): Promise<ValidationResult> {
+  validate(result: Result): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -250,7 +250,7 @@ export class OrchestratorAgent extends BaseAgent {
       validationResult.warnings = warnings;
     }
 
-    return validationResult;
+    return Promise.resolve(validationResult);
   }
 
   /**

@@ -27,7 +27,7 @@ export class TaskPlanner {
    * @param task - High-level task to decompose
    * @returns Array of execution steps
    */
-  async decompose(task: Task): Promise<Step[]> {
+  decompose(task: Task): Step[] {
     logger.debug(`Decomposing task`, { taskId: task.id, type: task.type });
 
     const steps: Step[] = [];
@@ -75,7 +75,7 @@ export class TaskPlanner {
    * @param steps - Steps to sort
    * @returns Topologically sorted steps
    */
-  async resolveDependencies(steps: Step[]): Promise<Dependency[]> {
+  resolveDependencies(steps: Step[]): Dependency[] {
     const dependencies: Dependency[] = [];
 
     // Build dependency graph
