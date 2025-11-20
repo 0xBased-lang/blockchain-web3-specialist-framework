@@ -10,6 +10,9 @@ import {
   MultiChainErrorCode,
   type UnifiedBalanceResponse,
   type UnifiedTransactionResponse,
+  type QueryBalanceParams,
+  type SendTransactionParams,
+  type TransferTokenParams,
 } from './types.js';
 import { logger } from '../../utils/index.js';
 
@@ -306,7 +309,7 @@ export class MultiChainToolManager {
   /**
    * Query Ethereum balance
    */
-  private async queryEthereumBalance(params: any): Promise<UnifiedBalanceResponse> {
+  private async queryEthereumBalance(params: QueryBalanceParams): Promise<UnifiedBalanceResponse> {
     if (!this.ethereumTools) {
       throw new MultiChainError(
         'Ethereum tools not available',
@@ -331,7 +334,7 @@ export class MultiChainToolManager {
   /**
    * Query Solana balance
    */
-  private async querySolanaBalance(params: any): Promise<UnifiedBalanceResponse> {
+  private async querySolanaBalance(params: QueryBalanceParams): Promise<UnifiedBalanceResponse> {
     if (!this.solanaTools) {
       throw new MultiChainError(
         'Solana tools not available',
@@ -398,7 +401,9 @@ export class MultiChainToolManager {
   /**
    * Send Ethereum transaction
    */
-  private async sendEthereumTransaction(params: any): Promise<UnifiedTransactionResponse> {
+  private async sendEthereumTransaction(
+    params: SendTransactionParams
+  ): Promise<UnifiedTransactionResponse> {
     if (!this.ethereumTools) {
       throw new MultiChainError(
         'Ethereum tools not available',
@@ -430,7 +435,9 @@ export class MultiChainToolManager {
   /**
    * Send Solana transaction
    */
-  private async sendSolanaTransaction(params: any): Promise<UnifiedTransactionResponse> {
+  private async sendSolanaTransaction(
+    params: SendTransactionParams
+  ): Promise<UnifiedTransactionResponse> {
     if (!this.solanaTools) {
       throw new MultiChainError(
         'Solana tools not available',
@@ -505,7 +512,9 @@ export class MultiChainToolManager {
   /**
    * Transfer ERC20 token
    */
-  private async transferERC20Token(_params: any): Promise<UnifiedTransactionResponse> {
+  private async transferERC20Token(
+    _params: TransferTokenParams
+  ): Promise<UnifiedTransactionResponse> {
     if (!this.ethereumTools) {
       throw new MultiChainError(
         'Ethereum tools not available',
@@ -525,7 +534,7 @@ export class MultiChainToolManager {
   /**
    * Transfer SPL token
    */
-  private async transferSPLToken(params: any): Promise<UnifiedTransactionResponse> {
+  private async transferSPLToken(params: TransferTokenParams): Promise<UnifiedTransactionResponse> {
     if (!this.solanaTools) {
       throw new MultiChainError(
         'Solana tools not available',
