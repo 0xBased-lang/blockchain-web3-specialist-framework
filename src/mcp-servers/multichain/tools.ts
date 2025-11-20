@@ -512,9 +512,7 @@ export class MultiChainToolManager {
   /**
    * Transfer ERC20 token
    */
-  private transferERC20Token(
-    _params: TransferTokenParams
-  ): Promise<UnifiedTransactionResponse> {
+  private transferERC20Token(_params: TransferTokenParams): Promise<UnifiedTransactionResponse> {
     if (!this.ethereumTools) {
       return Promise.reject(
         new MultiChainError(
