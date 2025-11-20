@@ -528,7 +528,16 @@ export class ContractAnalyzer {
   /**
    * Normalize metadata from Zod validation to ContractMetadata interface
    */
-  private normalizeMetadata(metadata: any): ContractMetadata {
+  private normalizeMetadata(metadata: {
+    address: string;
+    chain: 'ethereum' | 'solana';
+    bytecode: string;
+    isVerified?: boolean | undefined;
+    sourcecode?: string | undefined;
+    compilerVersion?: string | undefined;
+    optimization?: boolean | undefined;
+    abi?: readonly unknown[] | undefined;
+  }): ContractMetadata {
     // Build base metadata
     const result: ContractMetadata = {
       address: metadata.address,
