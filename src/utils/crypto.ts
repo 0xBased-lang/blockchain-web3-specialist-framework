@@ -11,7 +11,7 @@
  * NEVER log keys or plaintext data
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scrypt, createHash } from 'crypto';
 import { promisify } from 'util';
 import { type EncryptedKey } from '../types/wallet.js';
 
@@ -230,7 +230,6 @@ export function bytesToHex(bytes: Uint8Array, prefix = false): string {
  * @returns SHA-256 hash as hex string
  */
 export function sha256(data: string | Buffer): string {
-  const { createHash } = require('crypto');
   const hash = createHash('sha256');
   hash.update(data);
   return hash.digest('hex');

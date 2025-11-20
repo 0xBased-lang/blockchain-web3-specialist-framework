@@ -95,8 +95,8 @@ export class HDWalletManager extends WalletManager {
     this.encryptedSeed = await encrypt(seed, validated.password);
 
     // Wipe mnemonic from memory
-    let mnemonicStr = validated.mnemonic;
-    mnemonicStr = wipeString(mnemonicStr);
+    let _mnemonicStr = validated.mnemonic;
+    _mnemonicStr = wipeString(_mnemonicStr);
 
     // Reset derived indices
     this.derivedIndices.clear();
