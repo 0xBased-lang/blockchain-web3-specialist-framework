@@ -512,22 +512,26 @@ export class MultiChainToolManager {
   /**
    * Transfer ERC20 token
    */
-  private async transferERC20Token(
+  private transferERC20Token(
     _params: TransferTokenParams
   ): Promise<UnifiedTransactionResponse> {
     if (!this.ethereumTools) {
-      throw new MultiChainError(
-        'Ethereum tools not available',
-        SupportedChain.ETHEREUM,
-        MultiChainErrorCode.CHAIN_NOT_CONFIGURED
+      return Promise.reject(
+        new MultiChainError(
+          'Ethereum tools not available',
+          SupportedChain.ETHEREUM,
+          MultiChainErrorCode.CHAIN_NOT_CONFIGURED
+        )
       );
     }
 
     // Ethereum tools don't have transferToken yet, would need to call contract
-    throw new MultiChainError(
-      'ERC20 token transfers not yet implemented',
-      SupportedChain.ETHEREUM,
-      MultiChainErrorCode.OPERATION_NOT_SUPPORTED
+    return Promise.reject(
+      new MultiChainError(
+        'ERC20 token transfers not yet implemented',
+        SupportedChain.ETHEREUM,
+        MultiChainErrorCode.OPERATION_NOT_SUPPORTED
+      )
     );
   }
 

@@ -436,7 +436,7 @@ export class SolanaProvider {
     logs: string[];
   }> {
     return pRetry(
-      async () => {
+      () => {
         // Note: Simulation requires deserialized transaction
         // This is a simplified version - real implementation would need full transaction parsing
         throw new Error('Transaction simulation not yet implemented');
