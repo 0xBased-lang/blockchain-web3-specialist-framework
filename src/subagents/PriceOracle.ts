@@ -149,12 +149,7 @@ export class PriceOracle {
 
     // TWAP calculation (optional)
     if (includeTWAP) {
-      const twapData = await this.calculateTWAP(
-        tokenSymbol,
-        quoteCurrency,
-        twapPeriod,
-        sourcesToUse
-      );
+      const twapData = this.calculateTWAP(tokenSymbol, quoteCurrency, twapPeriod, sourcesToUse);
       if (twapData !== undefined) {
         (result as PriceQueryResult & { twap: TWAPData }).twap = twapData;
       }
@@ -405,12 +400,12 @@ export class PriceOracle {
   /**
    * Calculate TWAP (Time-Weighted Average Price)
    */
-  private async calculateTWAP(
+  private calculateTWAP(
     tokenSymbol: string,
     quoteCurrency: string,
     period: number,
     sources: OracleSource[]
-  ): Promise<TWAPData | undefined> {
+  ): TWAPData | undefined {
     // TODO: Implement proper TWAP calculation
     // For now, return undefined (will be implemented with Uniswap V3 integration)
     logger.debug('TWAP calculation not yet implemented', {
