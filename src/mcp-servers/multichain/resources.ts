@@ -9,6 +9,7 @@ import {
   type UnifiedBalanceResponse,
   type UnifiedTransactionResponse,
 } from './types.js';
+import type { SolanaAddress, Signature } from '../solana/types.js';
 import { logger } from '../../utils/index.js';
 
 /**
@@ -220,7 +221,7 @@ export class MultiChainResourceManager {
       );
     }
 
-    const resource = await this.solanaResources.getAccountResource(address as any);
+    const resource = await this.solanaResources.getAccountResource(address as SolanaAddress);
 
     if (!resource.data) {
       // Account doesn't exist - return zero balance
@@ -331,7 +332,7 @@ export class MultiChainResourceManager {
       );
     }
 
-    const resource = await this.solanaResources.getTransactionResource(signature as any);
+    const resource = await this.solanaResources.getTransactionResource(signature as Signature);
 
     if (!resource.data) {
       throw new MultiChainError(
@@ -342,7 +343,7 @@ export class MultiChainResourceManager {
     }
 
     // Extract first signer as "from" address
-    const from = resource.data.accounts[0] ?? ('' as any);
+    const from = resource.data.accounts[0] ?? ('' as SolanaAddress);
 
     return {
       chain: SupportedChain.SOLANA,
@@ -404,7 +405,7 @@ export class MultiChainResourceManager {
         }
 
         const resource = await this.solanaResources.getTokenAccountResource(
-          parsed.identifier as any
+          parsed.identifier as SolanaAddress
         );
         return {
           uri,

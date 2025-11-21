@@ -61,7 +61,7 @@ const server = new Server(
  *
  * List available resource types
  */
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
+server.setRequestHandler(ListResourcesRequestSchema, () => {
   const resources = resourceManager.listResources();
   return { resources };
 });
@@ -156,7 +156,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
  *
  * List available tools
  */
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+server.setRequestHandler(ListToolsRequestSchema, () => {
   return {
     tools: [
       {

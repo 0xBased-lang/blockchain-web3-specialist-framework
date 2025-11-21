@@ -186,14 +186,14 @@ export abstract class BaseAgent {
    * @param message - Message to send
    * @returns Response from target agent
    */
-  async communicate(_targetAgent: string, _message: Message): Promise<Response> {
+  communicate(_targetAgent: string, _message: Message): Promise<Response> {
     logger.warn('Inter-agent communication not yet implemented', {
       from: this.id,
       to: _targetAgent,
     });
 
     // Placeholder - will be implemented with MessageQueue
-    throw new Error('Inter-agent communication not yet implemented');
+    return Promise.reject(new Error('Inter-agent communication not yet implemented'));
   }
 
   /**

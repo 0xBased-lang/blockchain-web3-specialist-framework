@@ -116,17 +116,17 @@ export class ContractAnalyzer {
     // Perform analysis
     const bytecodeAnalysis =
       validated.options?.includeBytecodeAnalysis !== false
-        ? await this.analyzeBytecode(metadata)
+        ? this.analyzeBytecode(metadata)
         : undefined;
 
     const abiAnalysis =
       validated.options?.includeABIAnalysis !== false && metadata.abi !== undefined
-        ? await this.analyzeABI(metadata)
+        ? this.analyzeABI(metadata)
         : undefined;
 
     const sourceAnalysis =
       validated.options?.includeSourceAnalysis !== false && metadata.sourcecode !== undefined
-        ? await this.analyzeSource(metadata)
+        ? this.analyzeSource(metadata)
         : undefined;
 
     // Aggregate all findings
@@ -220,7 +220,7 @@ export class ContractAnalyzer {
   /**
    * Analyze contract bytecode for dangerous patterns
    */
-  private async analyzeBytecode(metadata: ContractMetadata): Promise<BytecodeAnalysisResult> {
+  private analyzeBytecode(metadata: ContractMetadata): BytecodeAnalysisResult {
     logger.info('Analyzing bytecode', { address: metadata.address });
 
     const findings: VulnerabilityFinding[] = [];
@@ -393,7 +393,7 @@ export class ContractAnalyzer {
   /**
    * Analyze contract ABI for unsafe functions
    */
-  private async analyzeABI(metadata: ContractMetadata): Promise<ABIAnalysisResult> {
+  private analyzeABI(metadata: ContractMetadata): ABIAnalysisResult {
     logger.info('Analyzing ABI', { address: metadata.address });
 
     interface ABIFunction {
@@ -461,7 +461,7 @@ export class ContractAnalyzer {
   /**
    * Analyze source code (if available)
    */
-  private async analyzeSource(metadata: ContractMetadata): Promise<SourceAnalysisResult> {
+  private analyzeSource(metadata: ContractMetadata): SourceAnalysisResult {
     logger.info('Analyzing source code', { address: metadata.address });
 
     const findings: VulnerabilityFinding[] = [];
@@ -528,7 +528,16 @@ export class ContractAnalyzer {
   /**
    * Normalize metadata from Zod validation to ContractMetadata interface
    */
-  private normalizeMetadata(metadata: any): ContractMetadata {
+  private normalizeMetadata(metadata: {
+    address: string;
+    chain: 'ethereum' | 'solana';
+    bytecode: string;
+    isVerified?: boolean | undefined;
+    sourcecode?: string | undefined;
+    compilerVersion?: string | undefined;
+    optimization?: boolean | undefined;
+    abi?: readonly unknown[] | undefined;
+  }): ContractMetadata {
     // Build base metadata
     const result: ContractMetadata = {
       address: metadata.address,

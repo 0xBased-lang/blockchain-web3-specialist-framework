@@ -42,6 +42,7 @@ import {
   SimulationProvider,
   type SimulationResult,
   type RiskAssessment,
+  type SimulationRequest,
 } from '../types/simulation.js';
 import {
   type ContractAnalysisResult,
@@ -673,10 +674,10 @@ export class TransactionBuilder {
     });
 
     // Build simulation request with conditional property assignment (exactOptionalPropertyTypes)
-    const simulationRequest: any = {
+    const simulationRequest = {
       chain: params.chain,
       from: params.from,
-    };
+    } as SimulationRequest;
 
     // Conditionally add optional properties
     if (params.to !== undefined) {
